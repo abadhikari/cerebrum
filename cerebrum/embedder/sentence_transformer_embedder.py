@@ -2,7 +2,7 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer
 
-from .embedder import Embedding
+from cerebrum.embedder.embedder import EmbeddingRecord
 
 
 class SentenceTransformerEmbedder:
@@ -27,13 +27,14 @@ class SentenceTransformerEmbedder:
         TypeError: If dtype is not a floating-point type.
     """
     if not np.issubdtype(dtype, np.floating):
-      raise TypeError(f'dtype must be a floating type. Got {dtype}')
+      raise TypeError(f'dtype must be a floating-point dtype. Got {dtype}')
 
     self._model = SentenceTransformer(model_name)
+    self._model_name = model_name
     self._dtype = dtype
     self._dimensions = self._model.get_sentence_embedding_dimension()
 
-  def embed(self, text) -> Embedding:
+  def embed(self, text: str) -> EmbeddingRecord:
     """
     Embed a single text string.
 
@@ -41,28 +42,34 @@ class SentenceTransformerEmbedder:
         text (str): Text to embed.
 
     Returns:
-        Embedding: A 2D array of shape (1, dim) containing the embedding.
+        EmbeddingRecord: A 2D array of shape (1, dim) embedding and its metadata.
     """
     return self.embed_batch([text])
 
-  def embed_batch(self, texts) -> Embedding:
+  def embed_batch(self, texts: list[str]) -> EmbeddingRecord:
     """
     Embed a batch of texts.
 
     Args:
-        texts (list[str]): List of text strings to embed.
+        texts (list[str]): list of text strings to embed.
 
     Returns:
-        Embedding: A 2D array of shape (n, dim) with dtype matching `self._dtype`.
+        EmbeddingRecord: A 2D array of shape (n, dim) embedding and its metadata. with dtype matching `self._dtype`.
                     Returns an empty array of shape (0, dim) if `texts` is empty.
     """
     if len(texts) == 0:
-      return np.empty((0, self._dimensions), dtype=self._dtype)
+      return EmbeddingRecord(
+          vector=np.empty((0, self._dimensions), dtype=self._dtype),
+          model_name=self._model_name
+      )
 
-    embedding = self._model.encode(texts, convert_to_numpy=True).astype(self._dtype)
-    if embedding.ndim == 1:
-      embedding = embedding.reshape(1, self._dimensions)
-    return np.ascontiguousarray(embedding, dtype=self._dtype)
+    vector = self._model.encode(texts, convert_to_numpy=True).astype(self._dtype)
+    if vector.ndim == 1:
+      vector = vector.reshape(1, self._dimensions)
+    return EmbeddingRecord(
+      vector=np.ascontiguousarray(vector, dtype=self._dtype),
+      model_name=self._model_name
+    )
 
   def get_dimensions(self) -> int:
     """

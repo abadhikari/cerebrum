@@ -1,4 +1,8 @@
-from .sentence_transformer_embedder import SentenceTransformerEmbedder
-from .embedder import Embedder, Embedding
+from cerebrum.embedder.sentence_transformer_embedder import SentenceTransformerEmbedder
+from cerebrum.embedder.embedder import Embedder, EmbeddingRecord
 
-__all__ = ["Embedder", "Embedding", "SentenceTransformerEmbedder"]
+__all__ = [
+  "Embedder",
+  "EmbeddingRecord",
+  "SentenceTransformerEmbedder"
+]
