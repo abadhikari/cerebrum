@@ -1,6 +1,6 @@
 import ollama
 
-from .language_model import ChatMessage
+from cerebrum.language_model.language_model import ChatMessage
 
 MESSAGE_KEY = "message"
 CONTENT_KEY = "content"
