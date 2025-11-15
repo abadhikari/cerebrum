@@ -61,19 +61,20 @@ class Service:
         self._thought_repository.complete_thought_insert(id64)
         return id64
 
-    def query(self, query: str, index_id: str) -> list[SearchHit]:
+    def query(self, query: str, index_id: str, k: int) -> list[SearchHit]:
         """
         Perform a semantic search over the given index.
 
         Args:
             query (str): Raw text query to embed and search with.
             index_id (str): Identifier of the semantic index to search.
+            k (int): Max number of nearest neighbors to retrieve.
 
         Returns:
             list[SearchHit]: Ranked list of matching thoughts.
         """
         embedding = self._embedder.embed(query)
-        similarities, ids = self._semantic_store.query(embedding.vector, 3)
+        similarities, ids = self._semantic_store.query(embedding.vector, k)
         thoughts = self._thought_repository.retrieve_thoughts(ids, index_id, ThoughtStatus.ACTIVE)
         return self._create_search_hits(thoughts, similarities, ids)
     
@@ -83,7 +84,7 @@ class Service:
 
         Args:
             thoughts (list[ThoughtRecord]): Fetched thought records.
-            similarities (Distances): similarity scores for each id.
+            similarities (Distances): Similarity scores for each id.
             ids (Ids): id64s returned by semantic map, ordered by rank.
 
         Returns:

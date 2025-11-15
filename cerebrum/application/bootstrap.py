@@ -1,6 +1,14 @@
+import os
+from dotenv import load_dotenv
+
 from cerebrum.application.config import Config
 from cerebrum.application.container import Container
 
+# Prevent OpenMP thread contention 
+os.environ["OMP_NUM_THREADS"] = "1"
+
+# Load env configuration
+load_dotenv()
 
 def build_container() -> Container:
     """
@@ -14,10 +22,6 @@ def build_container() -> Container:
     Returns:
         Container: A fully initialized dependency container.
     """
-    config = Config()
-
     return Container(
-        db_filepath=config.db_filepath,
-        faiss_filepath=config.faiss_filepath,
-        model_name=config.language_model_name
+        config=Config()
     )

@@ -17,30 +17,34 @@ class Config:
         Load and validate environment variables.
 
         Required:
-            BASE_DIR – Root directory for all persistent storage.
-        
-        Optional:
-            DB_FILE_NAME – SQLite filename (default: 'cerebrum.db')
-            FAISS_FILE_NAME – FAISS index filename (default: 'semantic.faiss')
-            LANGUAGE_MODEL_NAME – Embedding model name 
-                                  (default: 'all-MiniLM-L6-v2')
+            BASE_DIR – Root directory for all persistent data.
+            DB_FILE_NAME – Database filename.
+            FAISS_FILE_NAME – FAISS index filename.
+            EMBEDDING_MODEL_NAME – Name of the embedding model to load.
+            LANGUAGE_MODEL_NAME – Name of the language model to use.
+            LANGUAGE_MODEL_TEMPERATURE – Sampling temperature for the language model.
 
         Raises:
-            RuntimeError: If BASE_DIR is missing.
+            RuntimeError: If any required env vars are missing.
         """
-        base_dir_env = os.getenv("BASE_DIR")
-        if not base_dir_env:
-          raise RuntimeError("BASE_DIR env variable not set.")
-        self._base_dir = Path(base_dir_env)
+        self._base_dir: Path = Path(self._required_env("BASE_DIR"))
 
-        self._data_dir = self._base_dir / "data"
-        self._db_dir = self._data_dir / "db"
-        self._faiss_dir = self._data_dir / "faiss"
+        self._data_dir: Path = self._base_dir / "data"
+        self._db_dir: Path = self._data_dir / "db"
+        self._faiss_dir: Path = self._data_dir / "faiss"
 
-        self._db_file_name = os.getenv("DB_FILE_NAME", "cerebrum.db")
-        self._faiss_file_name = os.getenv("FAISS_FILE_NAME", "semantic.faiss")
+        self._db_file_name: str = self._required_env("DB_FILE_NAME")
+        self._faiss_file_name: str = self._required_env("FAISS_FILE_NAME")
 
-        self.language_model_name = os.getenv("LANGUAGE_MODEL_NAME", "all-MiniLM-L6-v2")
+        self.embedding_model_name: str = self._required_env("EMBEDDING_MODEL_NAME")
+        self.language_model_name: str = self._required_env("LANGUAGE_MODEL_NAME")
+        self.language_model_temperature: float = float(self._required_env("LANGUAGE_MODEL_TEMPERATURE"))
+    
+    def _required_env(self, env_key: str) -> str:
+        env_value = os.getenv(env_key)
+        if not env_value:
+          raise RuntimeError(f"Required env variable not set: {env_key}")
+        return env_value
     
     @property
     def db_filepath(self) -> Path:
