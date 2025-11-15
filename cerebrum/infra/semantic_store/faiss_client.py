@@ -1,10 +1,10 @@
 import numpy as np
-import os
+from pathlib import Path
 
 import faiss
 
 from cerebrum.infra.semantic_store.semantic_store import Distances, Ids
-from cerebrum.embedder.embedder import Embedding
+from cerebrum.infra.embedder.embedder import Embedding
 
 
 class FaissClient:
@@ -16,12 +16,12 @@ class FaissClient:
   integer IDs and cosine-similarity-style searches.
   """
 
-  def __init__(self, index_filepath: str, dimensions: int):
+  def __init__(self, index_filepath: Path, dimensions: int):
     """
     Initialize the FAISS client and load (or create) the index.
 
     Args:
-        index_filepath (str): Path to the FAISS index file on disk.
+        index_filepath (Path): Path to the FAISS index file on disk.
         dimensions (int): Dimensionality of the embeddings stored in the index.
 
     Raises:
@@ -42,17 +42,22 @@ class FaissClient:
     Raises:
         ValueError: If an existing index has a dimension mismatch.
     """
-    if not os.path.exists(self._index_filepath):
+    if not self._index_filepath.exists():
+      self._index_filepath.parent.mkdir(parents=True, exist_ok=True)
       return self._create_index_id_map_index()
     
     try:
-      index = faiss.read_index(self._index_filepath)
+      index = faiss.read_index(self._faiss_path)
       if index.d != self._dimensions:
         raise ValueError(f"Dimension mismatch: index has {index.d}, but expected {self._dimensions}")
       return index
 
     except OSError:
       return self._create_index_id_map_index()
+
+  @property
+  def _faiss_path(self) -> str:
+    return str(self._index_filepath)
   
   def _create_index_id_map_index(self) -> faiss.IndexIDMap2:
     """
@@ -70,7 +75,8 @@ class FaissClient:
     Raises:
         OSError: If the index cannot be written to the specified filepath.
     """
-    faiss.write_index(self._index, self._index_filepath)
+    faiss.write_index(self._index, self._faiss_path)
+  
   
   def write(self, embedding: Embedding, ids: list[int]) -> None:
     """
@@ -79,8 +85,8 @@ class FaissClient:
     Args:
         embedding (Embedding): 
             A 2D array of shape (n, d) containing the embeddings to insert.
-        ids list[str]: 
-            A list of embedding_ids corresponding to each embedding. 
+        ids (list[int]): 
+            A list of id64s corresponding to each embedding. 
             Each ID should be unique within the store.
 
     Raises:

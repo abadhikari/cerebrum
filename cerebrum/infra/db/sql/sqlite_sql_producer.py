@@ -1,6 +1,6 @@
 import json
 
-from cerebrum.embedder.embedder import EmbeddingRecord
+from cerebrum.infra.embedder.embedder import EmbeddingRecord
 from cerebrum.infra.db.sql.sql_client import SqlParams
 from cerebrum.infra.semantic_store.semantic_store import Ids
 from cerebrum.core.thought import Thought

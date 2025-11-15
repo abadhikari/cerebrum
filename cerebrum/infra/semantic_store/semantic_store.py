@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import Protocol
 
-from cerebrum.embedder.embedder import Embedding
+from cerebrum.infra.embedder.embedder import Embedding
 
 # 1D array of float values representing similarity or distance scores.
 Distances = NDArray[np.floating]

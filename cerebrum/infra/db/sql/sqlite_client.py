@@ -1,5 +1,6 @@
 import sqlite3
 from contextlib import contextmanager
+from pathlib import Path
 
 from cerebrum.infra.db.base_client import BaseClient
 from cerebrum.infra.db.sql.sql_client import Row, Rows, SqlParams
@@ -13,19 +14,15 @@ class SqliteClient(BaseClient):
   execution and transaction management. Designed for local persistence or
   low-concurrency applications where a full client/server database would be
   overkill.
-
-  Example:
-      >>> with SqliteClient("data.db") as client:
-      ...     rows = client.query("SELECT * FROM embeddings")
   """
 
-  def __init__(self, db_filepath, timeout: float = 5.0):
+  def __init__(self, db_filepath: Path, timeout: float = 5.0):
     """
     Initialize a new SqliteClient.
 
     Args:
-        db_filepath: Path to the SQLite database file. `:memory:` creates an in-memory DB.
-        timeout: Seconds to wait for a locked database before raising an error.
+        db_filepath (Path): Path to the SQLite database file.
+        timeout (float): Seconds to wait for a locked database before raising an error.
     """
     self._db_filepath = db_filepath
     self._timeout = timeout
@@ -44,6 +41,8 @@ class SqliteClient(BaseClient):
     """
     if self._connection:
       return
+    
+    self._db_filepath.parent.mkdir(parents=True, exist_ok=True) 
 
     self._connection = sqlite3.connect(
       self._db_filepath,
