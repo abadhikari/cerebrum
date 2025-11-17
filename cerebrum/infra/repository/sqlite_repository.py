@@ -2,12 +2,12 @@ from datetime import datetime, timezone
 from uuid import uuid4
 import json
 
-from cerebrum.infra.repository.thought_repository import Index, ThoughtRecord, ThoughtStatus
-from cerebrum.infra.embedder.embedder import EmbeddingRecord
+from cerebrum.core.repository import Index, ThoughtRecord, ThoughtStatus
+from cerebrum.core.embedder import EmbeddingRecord
+from cerebrum.core.thought import Thought
+from cerebrum.core.semantic_store import Ids
 from cerebrum.infra.db.sql.sql_client import SqlClient, Row
 from cerebrum.infra.db.sql.sqlite_sql_producer import SqliteSqlProducer
-from cerebrum.core.thought import Thought
-from cerebrum.infra.semantic_store.semantic_store import Ids
 
 
 class SqliteRepository:

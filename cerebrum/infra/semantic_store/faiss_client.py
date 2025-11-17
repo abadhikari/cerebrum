@@ -3,8 +3,8 @@ from pathlib import Path
 
 import faiss
 
-from cerebrum.infra.semantic_store.semantic_store import Distances, Ids
-from cerebrum.infra.embedder.embedder import Embedding
+from cerebrum.core.semantic_store import Distances, Ids
+from cerebrum.core.embedder import Embedding
 
 
 class FaissClient:

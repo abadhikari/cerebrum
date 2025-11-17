@@ -2,7 +2,7 @@ import numpy as np
 
 from sentence_transformers import SentenceTransformer
 
-from cerebrum.infra.embedder.embedder import EmbeddingRecord
+from cerebrum.core.embedder import EmbeddingRecord
 
 
 class SentenceTransformerEmbedder:

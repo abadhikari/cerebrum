@@ -1,9 +1,9 @@
 import json
 
-from cerebrum.infra.embedder.embedder import EmbeddingRecord
-from cerebrum.infra.db.sql.sql_client import SqlParams
-from cerebrum.infra.semantic_store.semantic_store import Ids
+from cerebrum.core.embedder import EmbeddingRecord
+from cerebrum.core.semantic_store import Ids
 from cerebrum.core.thought import Thought
+from cerebrum.infra.db.sql.sql_client import SqlParams
 
 # Type alias representing a single SQL statement and its named parameters.
 SqlStatement = tuple[str, SqlParams]

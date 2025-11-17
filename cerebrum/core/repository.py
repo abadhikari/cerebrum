@@ -4,8 +4,8 @@ from enum import StrEnum
 from typing import Protocol
 
 from cerebrum.core.thought import Thought
-from cerebrum.infra.semantic_store.semantic_store import Ids
-from cerebrum.infra.embedder.embedder import EmbeddingRecord
+from cerebrum.core.semantic_store import Ids
+from cerebrum.core.embedder import EmbeddingRecord
 
 @dataclass(frozen=True, slots=True)
 class Index:

@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from cerebrum.core.thought import Thought
-from cerebrum.infra.embedder import Embedder
-from cerebrum.infra.semantic_store import Distances, Ids, SemanticStore
-from cerebrum.infra.repository import Index, ThoughtRecord, ThoughtRepository, ThoughtStatus
+from cerebrum.core.embedder import Embedder
+from cerebrum.core.semantic_store import Distances, Ids, SemanticStore
+from cerebrum.core.repository import Index, ThoughtRecord, ThoughtRepository, ThoughtStatus
 
 @dataclass(frozen=True)
 class SearchHit:

@@ -1,7 +1,7 @@
 from cerebrum.application.service import SearchHit, Service
-from cerebrum.infra.language_model import LanguageModel
-from cerebrum.core import Thought
-from cerebrum.infra.repository import Index
+from cerebrum.core.language_model import LanguageModel
+from cerebrum.core.thought import Thought
+from cerebrum.core.repository import Index
 
 from typing import Optional
 
@@ -212,8 +212,6 @@ class CliSession:
 				seen.add(tag)
 		return tags
 
-
-
 	def _action_query_thoughts(self) -> None:
 		print("\n==== QUERY THOUGHTS ====\n")
 		query = input("Enter your query: ")
@@ -235,11 +233,6 @@ class CliSession:
 	def _action_create_index(self) -> None:
 		index_id = self._create_index()
 		self._select_index_with_id(index_id)
-
-
-
-
-
 
 	def _action_ask_cerebrum(self) -> None:
 		"""
