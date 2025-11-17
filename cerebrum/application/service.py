@@ -68,7 +68,7 @@ class Service:
         Args:
             query (str): Raw text query to embed and search with.
             index_id (str): Identifier of the semantic index to search.
-            k (int): Max number of nearest neighbors to retrieve.
+            k (int): Maximium number of nearest neighbors to retrieve.
 
         Returns:
             list[SearchHit]: Ranked list of matching thoughts.
@@ -125,3 +125,15 @@ class Service:
         """
         return self._thought_repository.list_indexes()
     
+    def get_index_by_id(self, index_id: str) -> Index:
+        """
+        Return a semantic index based on the index_id.
+        
+        Raises:
+            KeyError: If no index exists with the given ID.
+        """
+        indexes = self.get_indexes()
+        for index in indexes:
+            if index.index_id == index_id:
+                return index
+        raise KeyError(f"No index found with id: {index_id}")

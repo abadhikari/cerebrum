@@ -162,6 +162,15 @@ class FaissClient:
     Raises:
         TypeError: If the query embedding has an invalid dtype or shape.
     """
+    ntotal = self._index.ntotal
+    if ntotal == 0:
+      empty_d = np.empty(0, dtype=np.float32)
+      empty_i = np.empty(0, dtype=np.int64)
+      return empty_d, empty_i
+
+    # Clamp k to ensure it's always less than or equal to total embeddings
+    k = min(k, ntotal)
+
     normalized_embedding = self._normalize_embedding(embedding)
     D, I = self._index.search(normalized_embedding, k)
     return D[0], I[0]
