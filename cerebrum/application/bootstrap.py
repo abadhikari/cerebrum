@@ -1,11 +1,13 @@
-import os
+import torch
+
+# Prevent thread contention for pytorch dependencies
+torch.set_num_threads(1)
+
 from dotenv import load_dotenv
 
 from cerebrum.application.config import Config
 from cerebrum.application.container import Container
 
-# Prevent OpenMP thread contention 
-os.environ["OMP_NUM_THREADS"] = "1"
 
 # Load env configuration
 load_dotenv()

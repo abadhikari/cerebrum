@@ -1,0 +1,49 @@
+"""
+CLI view helpers for Cerebrum.
+
+This module defines small, stateless functions used by the interactive
+CLI to display banners, menus, index lists, and query results. These
+functions contain no business logic — they only handle text formatting
+and printing to the console.
+"""
+
+from cerebrum.application.service import SearchHit
+from cerebrum.core.repository import Index
+
+CEREBRUM_CHAT_ASCII = r"""
+_________                     ___.                         _________ .__            __   
+\_   ___ \  ___________   ____\_ |_________ __ __  _____   \_   ___ \|  |__ _____ _/  |_ 
+/    \  \/_/ __ \_  __ \_/ __ \| __ \_  __ \  |  \/     \  /    \  \/|  |  \\__  \\   __\
+\     \___\  ___/|  | \/\  ___/| \_\ \  | \/  |  /  Y Y  \ \     \___|   Y  \/ __ \|  |  
+ \______  /\___  >__|    \___  >___  /__|  |____/|__|_|  /  \______  /___|  (____  /__|  
+        \/     \/            \/    \/                  \/          \/     \/     \/      
+
+"""
+
+def print_banner() -> None:
+	print(CEREBRUM_CHAT_ASCII)
+
+
+def print_indexes(indexes: list[Index]) -> dict[str, Index]:
+	indexes_map = {}
+	print("\n=== Indexes List ===\n")
+	for i, index in enumerate(indexes):
+		print(f"{i + 1}. {index}")
+		indexes_map[str(i + 1)] = index
+	return indexes_map
+
+
+def print_menu(menu_actions: dict[str, tuple[str, object]]) -> None:
+	print("\n=== MENU ===")
+	for key, (label, _) in menu_actions.items():
+		print(f"{key}. {label}")
+
+
+def print_search_hits(search_hits: list[SearchHit]) -> None:
+	print("\n===== Results =====\n")
+	for hit in search_hits:
+		print(
+			f"thought: {hit.record.body}\n"
+			f"tags: {hit.record.tags}\n"
+			f"score: {hit.score}\n"
+		)

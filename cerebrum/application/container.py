@@ -1,11 +1,13 @@
 from cerebrum.application.service import Service
 from cerebrum.application.config import Config
 from cerebrum.core.language_model import LanguageModel
+from cerebrum.core.speech_to_text import SpeechToText
 from cerebrum.infra.db import SqliteClient, SqliteSqlProducer, SqliteSchemaManager
 from cerebrum.infra.repository import SqliteRepository
 from cerebrum.infra.embedder import SentenceTransformerEmbedder
 from cerebrum.infra.semantic_store import FaissClient
 from cerebrum.infra.language_model import OllamaModel
+from cerebrum.infra.speech_to_text import WhisperSpeechToText
 
 from typing import Optional
 
@@ -39,6 +41,7 @@ class Container:
         self._service: Optional[Service] = None
         self._embedder: Optional[SentenceTransformerEmbedder] = None
         self._language_model: Optional[OllamaModel] = None
+        self._speech_to_text: Optional[WhisperSpeechToText] = None
         
         self._started = False
   
@@ -57,12 +60,14 @@ class Container:
         service = Service(repository, embedder, faiss_client)
 
         language_model = OllamaModel(self._config.language_model_name, self._config.language_model_temperature)
+        speech_to_text = WhisperSpeechToText(self._config.whisper_model_name)
 
         self._faiss_client = faiss_client
         self._sql_client = sql_client
         self._service = service
         self._embedder = embedder
         self._language_model = language_model
+        self._speech_to_text = speech_to_text
 
         self._started = True
     
@@ -83,6 +88,7 @@ class Container:
             self._service = None
             self._embedder = None
             self._language_model = None
+            self._speech_to_text = None
             self._started = False
     
     def __enter__(self) -> "Container":
@@ -123,3 +129,17 @@ class Container:
         """
         self._check_started()
         return self._language_model
+
+    @property
+    def speech_to_text(self) -> SpeechToText:
+        """
+        Return the initialized `SpeechToText` instance.
+
+        Raises:
+            RuntimeError: If the container has not been started.
+
+        Returns:
+            SpeechToText: The fully constructed speech to text model.
+        """
+        self._check_started()
+        return self._speech_to_text

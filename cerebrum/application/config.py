@@ -23,6 +23,7 @@ class Config:
             EMBEDDING_MODEL_NAME – Name of the embedding model to load.
             LANGUAGE_MODEL_NAME – Name of the language model to use.
             LANGUAGE_MODEL_TEMPERATURE – Sampling temperature for the language model.
+            WHISPER_MODEL_NAME - Name of the speech to text model to use.
 
         Raises:
             RuntimeError: If any required env vars are missing.
@@ -39,6 +40,8 @@ class Config:
         self.embedding_model_name: str = self._required_env("EMBEDDING_MODEL_NAME")
         self.language_model_name: str = self._required_env("LANGUAGE_MODEL_NAME")
         self.language_model_temperature: float = float(self._required_env("LANGUAGE_MODEL_TEMPERATURE"))
+
+        self.whisper_model_name: str = self._required_env("WHISPER_MODEL_NAME")
     
     def _required_env(self, env_key: str) -> str:
         env_value = os.getenv(env_key)
