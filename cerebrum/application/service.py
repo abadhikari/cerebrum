@@ -3,6 +3,7 @@ from cerebrum.core.thought import Thought
 from cerebrum.core.embedder import Embedder
 from cerebrum.core.semantic_store import Distances, Ids, SemanticStore
 from cerebrum.core.repository import Index, ThoughtRecord, ThoughtRepository, ThoughtStatus
+from cerebrum.core.errors import NoEmbeddingsError
 
 @dataclass(frozen=True)
 class SearchHit:
@@ -74,7 +75,11 @@ class Service:
             list[SearchHit]: Ranked list of matching thoughts.
         """
         embedding = self._embedder.embed(query)
-        similarities, ids = self._semantic_store.query(embedding.vector, k)
+        try:
+            similarities, ids = self._semantic_store.query(embedding.vector, k)
+        except NoEmbeddingsError:
+            return None
+
         thoughts = self._thought_repository.retrieve_thoughts(ids, index_id, ThoughtStatus.ACTIVE)
         return self._create_search_hits(thoughts, similarities, ids)
     

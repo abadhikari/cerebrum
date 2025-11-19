@@ -10,18 +10,18 @@ and printing to the console.
 from cerebrum.application.service import SearchHit
 from cerebrum.core.repository import Index
 
-CEREBRUM_CHAT_ASCII = r"""
-_________                     ___.                         _________ .__            __   
-\_   ___ \  ___________   ____\_ |_________ __ __  _____   \_   ___ \|  |__ _____ _/  |_ 
-/    \  \/_/ __ \_  __ \_/ __ \| __ \_  __ \  |  \/     \  /    \  \/|  |  \\__  \\   __\
-\     \___\  ___/|  | \/\  ___/| \_\ \  | \/  |  /  Y Y  \ \     \___|   Y  \/ __ \|  |  
- \______  /\___  >__|    \___  >___  /__|  |____/|__|_|  /  \______  /___|  (____  /__|  
-        \/     \/            \/    \/                  \/          \/     \/     \/      
+CEREBRUM_ASCII = r"""
+_________                     ___.                         
+\_   ___ \  ___________   ____\_ |_________ __ __  _____   
+/    \  \/_/ __ \_  __ \_/ __ \| __ \_  __ \  |  \/     \  
+\     \___\  ___/|  | \/\  ___/| \_\ \  | \/  |  /  Y Y  \ 
+ \______  /\___  >__|    \___  >___  /__|  |____/|__|_|  / 
+        \/     \/            \/    \/                  \/  
 
 """
 
 def print_banner() -> None:
-	print(CEREBRUM_CHAT_ASCII)
+	print(CEREBRUM_ASCII)
 
 
 def print_indexes(indexes: list[Index]) -> dict[str, Index]:

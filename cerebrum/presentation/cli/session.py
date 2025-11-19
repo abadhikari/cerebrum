@@ -36,7 +36,7 @@ class CliSession:
 
         Args:
             service: Application service used for indexes and thought storage/query.
-            model: Language model used for both Cerebrum Chat and the thought coach.
+            model: Language model used for both Cerebrum and the thought coach.
         """
 		self._service = service
 		self._model = model
@@ -85,6 +85,10 @@ class CliSession:
 			print("No indexes currently exist! You will need to create one.")
 			index_id = self._create_index() 
 			self._select_index_with_id(index_id)
+			return
+		
+		if len(indexes) == 1:
+			self._selected_index = indexes[0]
 			return
 
 		indexes_map = print_indexes(indexes)
@@ -195,8 +199,23 @@ class CliSession:
 
 		index = self._require_index()
 		search_hits = self._service.query(query, index.index_id, k)
+
+		error_msg = self._validate_search_hits(search_hits)
+		if error_msg:
+			print(f"\n{error_msg}")
+			return
+
 		print_search_hits(search_hits)
 
+	def _validate_search_hits(self, search_hits):
+		if search_hits is None:
+			return "No embeddings exist yet. Add thoughts first."
+		
+		if not search_hits:
+			return "No matching thoughts found."
+
+		return None
+	
 	def _action_create_index(self) -> None:
 		index_id = self._create_index()
 		self._select_index_with_id(index_id)
@@ -216,7 +235,12 @@ class CliSession:
 		index = self._require_index()
 		search_hits = self._service.query(query, index.index_id, k)
 
-		if see_semantic_results == "y":
+		error_msg = self._validate_search_hits(search_hits)
+		if error_msg:
+			print(f"\n{error_msg}")
+			return
+
+		if see_semantic_results.strip().lower() == "y":
 			print_search_hits(search_hits)
 
 		user_context = (
@@ -227,5 +251,18 @@ class CliSession:
 			{"role": "system", "content": CEREBRUM_CHAT_SYSTEM_PROMPT},
 			{"role": "user", "content": user_context}
 		]
-		print("\n==== Cerebrum Response ====\n")
-		print(self._model.call(messages))
+		self._ask_cerebrum_chat_loop(messages)
+	
+	def _ask_cerebrum_chat_loop(self, messages: list):
+		print("\n---- START OF CEREBRUM CHAT ----\n")
+		while True:
+			response = self._model.call(messages)
+			print(f"\nCerebrum: {response}")
+			messages.append({"role": "assistant", "content": response})
+
+			user_input = input("\nYou: ").strip()
+			if user_input.lower() in {"/quit", "/q"}:
+				print("\n---- END OF CHAT ----\n")
+				break
+			messages.append({"role": "user", "content": user_input})
+

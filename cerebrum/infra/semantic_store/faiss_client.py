@@ -5,6 +5,7 @@ import faiss
 
 from cerebrum.core.semantic_store import Distances, Ids
 from cerebrum.core.embedder import Embedding
+from cerebrum.core.errors import NoEmbeddingsError
 
 
 class FaissClient:
@@ -164,9 +165,7 @@ class FaissClient:
     """
     ntotal = self._index.ntotal
     if ntotal == 0:
-      empty_d = np.empty(0, dtype=np.float32)
-      empty_i = np.empty(0, dtype=np.int64)
-      return empty_d, empty_i
+      raise NoEmbeddingsError("No embeddings exist in this index yet.")
 
     # Clamp k to ensure it's always less than or equal to total embeddings
     k = min(k, ntotal)

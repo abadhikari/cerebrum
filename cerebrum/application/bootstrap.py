@@ -1,7 +1,7 @@
-import torch
+import os
 
-# Prevent thread contention for pytorch dependencies
-torch.set_num_threads(1)
+# Prevent OpenMP thread contention
+os.environ["OMP_NUM_THREADS"] = "1"
 
 from dotenv import load_dotenv
 
