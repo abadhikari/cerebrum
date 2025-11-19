@@ -8,6 +8,7 @@ from cerebrum.infra.embedder import SentenceTransformerEmbedder
 from cerebrum.infra.semantic_store import FaissClient
 from cerebrum.infra.language_model import OllamaModel
 from cerebrum.infra.speech_to_text import WhisperSpeechToText
+from cerebrum.infra.resolver import SimpleResolver
 
 from typing import Optional
 
@@ -42,6 +43,7 @@ class Container:
         self._embedder: Optional[SentenceTransformerEmbedder] = None
         self._language_model: Optional[OllamaModel] = None
         self._speech_to_text: Optional[WhisperSpeechToText] = None
+        self._resolver: Optional[SimpleResolver] = None
         
         self._started = False
   
@@ -57,7 +59,8 @@ class Container:
         sql_producer = SqliteSqlProducer()
         SqliteSchemaManager(sql_client, sql_producer).init()
         repository = SqliteRepository(sql_client, sql_producer)
-        service = Service(repository, embedder, faiss_client)
+        resolver = SimpleResolver(0.1)
+        service = Service(repository, embedder, faiss_client, resolver)
 
         language_model = OllamaModel(self._config.language_model_name, self._config.language_model_temperature)
         speech_to_text = WhisperSpeechToText(self._config.whisper_model_name)
@@ -68,6 +71,7 @@ class Container:
         self._embedder = embedder
         self._language_model = language_model
         self._speech_to_text = speech_to_text
+        self._resolver = resolver
 
         self._started = True
     
@@ -89,6 +93,7 @@ class Container:
             self._embedder = None
             self._language_model = None
             self._speech_to_text = None
+            self._resolver = None
             self._started = False
     
     def __enter__(self) -> "Container":

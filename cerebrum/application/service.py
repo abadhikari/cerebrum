@@ -4,20 +4,8 @@ from cerebrum.core.embedder import Embedder
 from cerebrum.core.semantic_store import Distances, Ids, SemanticStore
 from cerebrum.core.repository import Index, ThoughtRecord, ThoughtRepository, ThoughtStatus
 from cerebrum.core.errors import NoEmbeddingsError
-
-@dataclass(frozen=True)
-class SearchHit:
-    """
-    A ranked semantic search result.
-
-    Attributes:
-        record (ThoughtRecord): The retrieved thought metadata/content.
-        score (float): Cosine-similarity score (higher = more similar).
-        rank (int): Zero-based rank in the search results.
-    """
-    record: ThoughtRecord
-    score: float
-    rank: int
+from cerebrum.core.search import SearchHit, SearchResult, SearchStatus
+from cerebrum.core.resolver import Resolver
 
 
 class Service:
@@ -29,7 +17,7 @@ class Service:
     for adding thoughts and querying them.
     """
 
-    def __init__(self, thought_repository: ThoughtRepository, embedder: Embedder, semantic_store: SemanticStore):
+    def __init__(self, thought_repository: ThoughtRepository, embedder: Embedder, semantic_store: SemanticStore, resolver: Resolver):
         """
         Initialize the service with its dependencies.
 
@@ -40,10 +28,14 @@ class Service:
                 Backend capable of converting text into embedding vectors.
             semantic_store (SemanticStore):
                 Semantic store for nearest-neighbor search.
+            resolver (Resolver):
+                Component responsible for filtering and classifying raw search hits
+                into a high-level SearchResult.
         """
         self._thought_repository = thought_repository
         self._embedder = embedder
         self._semantic_store = semantic_store
+        self._resolver = resolver
     
     def add_thought(self, thought: Thought, index_id: str) -> int:
         """
@@ -62,7 +54,7 @@ class Service:
         self._thought_repository.complete_thought_insert(id64)
         return id64
 
-    def query(self, query: str, index_id: str, k: int) -> list[SearchHit]:
+    def query(self, query: str, index_id: str, k: int) -> SearchResult:
         """
         Perform a semantic search over the given index.
 
@@ -72,16 +64,21 @@ class Service:
             k (int): Maximium number of nearest neighbors to retrieve.
 
         Returns:
-            list[SearchHit]: Ranked list of matching thoughts.
+            SearchResult: The structured outcome of the search.
+
         """
         embedding = self._embedder.embed(query)
         try:
             similarities, ids = self._semantic_store.query(embedding.vector, k)
         except NoEmbeddingsError:
-            return None
+            return SearchResult(
+                status=SearchStatus.NO_EMBEDDINGS, 
+                hits=[]
+            )
 
         thoughts = self._thought_repository.retrieve_thoughts(ids, index_id, ThoughtStatus.ACTIVE)
-        return self._create_search_hits(thoughts, similarities, ids)
+        search_hits = self._create_search_hits(thoughts, similarities, ids)
+        return self._resolver.resolve(search_hits)
     
     def _create_search_hits(self, thoughts: list[ThoughtRecord], similarities: Distances, ids: Ids) -> list[SearchHit]:
         """

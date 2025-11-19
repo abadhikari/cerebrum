@@ -7,7 +7,7 @@ functions contain no business logic — they only handle text formatting
 and printing to the console.
 """
 
-from cerebrum.application.service import SearchHit
+from cerebrum.core.search import SearchResult
 from cerebrum.core.repository import Index
 
 CEREBRUM_ASCII = r"""
@@ -39,9 +39,9 @@ def print_menu(menu_actions: dict[str, tuple[str, object]]) -> None:
 		print(f"{key}. {label}")
 
 
-def print_search_hits(search_hits: list[SearchHit]) -> None:
+def print_search_result(search_result: SearchResult) -> None:
 	print("\n===== Results =====\n")
-	for hit in search_hits:
+	for hit in search_result.hits:
 		print(
 			f"thought: {hit.record.body}\n"
 			f"tags: {hit.record.tags}\n"

@@ -5,11 +5,12 @@ from cerebrum.core.language_model import LanguageModel
 from cerebrum.core.thought import Thought
 from cerebrum.core.repository import Index
 from cerebrum.core.speech_to_text import SpeechToText
+from cerebrum.core.search import SearchResult, SearchStatus
 from cerebrum.presentation.cli.views import (
 	print_banner,
 	print_indexes,
 	print_menu,
-	print_search_hits
+	print_search_result
 )
 from cerebrum.presentation.cli.prompts import (
 	CEREBRUM_CHAT_SYSTEM_PROMPT,
@@ -198,20 +199,20 @@ class CliSession:
 		k = int(input("Enter your k value: "))
 
 		index = self._require_index()
-		search_hits = self._service.query(query, index.index_id, k)
+		search_result = self._service.query(query, index.index_id, k)
 
-		error_msg = self._validate_search_hits(search_hits)
+		error_msg = self._validate_search_result(search_result)
 		if error_msg:
 			print(f"\n{error_msg}")
 			return
 
-		print_search_hits(search_hits)
+		print_search_result(search_result)
 
-	def _validate_search_hits(self, search_hits):
-		if search_hits is None:
+	def _validate_search_result(self, search_result: SearchResult) -> Optional[str]:
+		if search_result.status == SearchStatus.NO_EMBEDDINGS:
 			return "No embeddings exist yet. Add thoughts first."
 		
-		if not search_hits:
+		if search_result.status == SearchStatus.NO_MATCHES:
 			return "No matching thoughts found."
 
 		return None
@@ -233,19 +234,19 @@ class CliSession:
 		see_semantic_results = input("Would you like to see the semantic results? (y/n): ")
 
 		index = self._require_index()
-		search_hits = self._service.query(query, index.index_id, k)
+		search_result = self._service.query(query, index.index_id, k)
 
-		error_msg = self._validate_search_hits(search_hits)
+		error_msg = self._validate_search_result(search_result)
 		if error_msg:
 			print(f"\n{error_msg}")
 			return
 
 		if see_semantic_results.strip().lower() == "y":
-			print_search_hits(search_hits)
+			print_search_result(search_result)
 
 		user_context = (
 			f"user_query: {query}\n"
-			f"search_hits: {search_hits}"
+			f"search_hits: {search_result.hits}"
 		)
 		messages = [
 			{"role": "system", "content": CEREBRUM_CHAT_SYSTEM_PROMPT},
