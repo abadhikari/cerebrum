@@ -16,6 +16,7 @@ from cerebrum.presentation.cli.prompts import (
 	CEREBRUM_CHAT_SYSTEM_PROMPT,
 	THOUGHT_COACH_SYSTEM_PROMPT
 )
+from cerebrum.presentation.cli.spinner import typewriter_spinner
 
 VOICE_COMMAND = "/v"
 
@@ -257,8 +258,9 @@ class CliSession:
 	def _ask_cerebrum_chat_loop(self, messages: list):
 		print("\n---- START OF CEREBRUM CHAT ----\n")
 		while True:
-			response = self._model.call(messages)
-			print(f"\nCerebrum: {response}")
+			with typewriter_spinner(message="Thinking ..."):
+				response = self._model.call(messages)
+			print(f"Cerebrum: {response}")
 			messages.append({"role": "assistant", "content": response})
 
 			user_input = input("\nYou: ").strip()
