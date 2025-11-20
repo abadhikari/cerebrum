@@ -1,9 +1,12 @@
 import sqlite3
+import logging
 from contextlib import contextmanager
 from pathlib import Path
 
 from cerebrum.infra.db.base_client import BaseClient
 from cerebrum.infra.db.sql.sql_client import Row, Rows, SqlParams
+
+logger = logging.getLogger(__name__)
 
 
 class SqliteClient(BaseClient):
@@ -40,7 +43,10 @@ class SqliteClient(BaseClient):
     Idempotent; repeated calls are no-ops once connected.
     """
     if self._connection:
+      logger.debug("SqliteClient.connect() called but connection already established.")
       return
+    
+    logger.info("Connecting to SQLite at %s", self._db_filepath)
     
     self._db_filepath.parent.mkdir(parents=True, exist_ok=True) 
 
@@ -63,6 +69,7 @@ class SqliteClient(BaseClient):
     Idempotent; silently ignored if already closed.
     """
     if self._connection:
+      logger.debug("Closing SQLite connection to %s", self._db_filepath)
       self._connection.close()
       self._connection = None
   
@@ -81,6 +88,9 @@ class SqliteClient(BaseClient):
     Raises:
         sqlite3.Error: If execution fails.
     """
+    param_keys = list((params or {}).keys())
+    logger.debug("EXECUTE: %s | param_keys=%s", sql, param_keys)
+
     cur = self.connection.execute(sql, params or {})
     return cur.rowcount
   
@@ -98,6 +108,9 @@ class SqliteClient(BaseClient):
     Raises:
         sqlite3.Error: If execution fails.
     """
+    param_keys = list((params or {}).keys())
+    logger.debug("QUERY: %s | param_keys=%s", sql, param_keys)
+
     cur = self.connection.execute(sql, params or {})
     return [dict(row) for row in cur.fetchall()]
   
@@ -148,6 +161,7 @@ class SqliteClient(BaseClient):
       connection.execute("BEGIN IMMEDIATE;")
       yield
       connection.execute("COMMIT;")
-    except (Exception, KeyboardInterrupt):
+    except (Exception, KeyboardInterrupt) as e:
       connection.execute("ROLLBACK;")
+      logger.warning("Transaction rolled back due to: %s", e)
       raise

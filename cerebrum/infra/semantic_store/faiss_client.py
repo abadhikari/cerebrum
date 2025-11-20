@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 from pathlib import Path
 
@@ -6,6 +7,8 @@ import faiss
 from cerebrum.core.semantic_store import Distances, Ids
 from cerebrum.core.embedder import Embedding
 from cerebrum.core.errors import NoEmbeddingsError
+
+logger = logging.getLogger(__name__)
 
 
 class FaissClient:
@@ -45,15 +48,20 @@ class FaissClient:
     """
     if not self._index_filepath.exists():
       self._index_filepath.parent.mkdir(parents=True, exist_ok=True)
+      logger.info("FAISS index not found, creating new index at %s", self._index_filepath)
       return self._create_index_id_map_index()
     
     try:
       index = faiss.read_index(self._faiss_path)
       if index.d != self._dimensions:
         raise ValueError(f"Dimension mismatch: index has {index.d}, but expected {self._dimensions}")
+      logger.info("Loaded FAISS index from %s (ntotal=%d, dim=%d)",
+                  self._index_filepath, index.ntotal, index.d)
       return index
 
     except OSError:
+      logger.warning("Failed to read FAISS index at %s, creating new empty index",
+                     self._index_filepath)
       return self._create_index_id_map_index()
 
   @property
@@ -76,6 +84,7 @@ class FaissClient:
     Raises:
         OSError: If the index cannot be written to the specified filepath.
     """
+    logger.debug("Writing FAISS index to %s (ntotal=%d)", self._index_filepath, self._index.ntotal)
     faiss.write_index(self._index, self._faiss_path)
   
   
@@ -96,7 +105,10 @@ class FaissClient:
     """
     normalized_embedding = self._normalize_embedding(embedding)
     normalized_ids = self._normalize_ids(ids)
+    logger.debug("Adding %d embeddings to FAISS index (ntotal before=%d)", 
+                 normalized_embedding.shape[0], self._index.ntotal)
     self._index.add_with_ids(normalized_embedding, normalized_ids)
+    logger.debug("FAISS index ntotal after=%d", self._index.ntotal)
 
   def _normalize_embedding(self, embedding: Embedding) -> Embedding:
     """
@@ -169,6 +181,7 @@ class FaissClient:
 
     # Clamp k to ensure it's always less than or equal to total embeddings
     k = min(k, ntotal)
+    logger.debug("FAISS query: k=%d, ntotal=%d", k, ntotal)
 
     normalized_embedding = self._normalize_embedding(embedding)
     D, I = self._index.search(normalized_embedding, k)

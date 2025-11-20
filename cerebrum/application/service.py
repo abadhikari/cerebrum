@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+import logging
+
 from cerebrum.core.thought import Thought
 from cerebrum.core.embedder import Embedder
 from cerebrum.core.semantic_store import Distances, Ids, SemanticStore
@@ -6,6 +7,8 @@ from cerebrum.core.repository import Index, ThoughtRecord, ThoughtRepository, Th
 from cerebrum.core.errors import NoEmbeddingsError
 from cerebrum.core.search import SearchHit, SearchResult, SearchStatus
 from cerebrum.core.resolver import Resolver
+
+logger = logging.getLogger(__name__)
 
 
 class Service:
@@ -48,10 +51,12 @@ class Service:
         Returns:
             int: The assigned id64 for the new thought.
         """
+        logger.info("AddThought: adding thought to index %s", index_id)
         embedding = self._embedder.embed(thought.body)
         id64 = self._thought_repository.insert_thought(thought, embedding, index_id)
         self._semantic_store.write(embedding.vector, [id64])
         self._thought_repository.complete_thought_insert(id64)
+        logger.info("AddThought: completed insert id64=%s into index=%s", id64, index_id)
         return id64
 
     def query(self, query: str, index_id: str, k: int) -> SearchResult:
@@ -67,6 +72,7 @@ class Service:
             SearchResult: The structured outcome of the search.
 
         """
+        logger.info("Query: starting on index=%s requested_k=%d", index_id, k)
         embedding = self._embedder.embed(query)
         try:
             similarities, ids = self._semantic_store.query(embedding.vector, k)
@@ -78,7 +84,16 @@ class Service:
 
         thoughts = self._thought_repository.retrieve_thoughts(ids, index_id, ThoughtStatus.ACTIVE)
         search_hits = self._create_search_hits(thoughts, similarities, ids)
-        return self._resolver.resolve(search_hits)
+        result = self._resolver.resolve(search_hits)
+
+        logger.info(
+            "Query: finished index=%s status=%s raw_hits=%d filtered_hits=%d",
+            index_id,
+            result.status.name,
+            len(search_hits),
+            len(result.hits),
+        )
+        return result
     
     def _create_search_hits(self, thoughts: list[ThoughtRecord], similarities: Distances, ids: Ids) -> list[SearchHit]:
         """
@@ -116,7 +131,14 @@ class Service:
         Returns:
             str: The generated index_id.
         """
-        return self._thought_repository.create_index(index_name, algorithm)
+        index_id = self._thought_repository.create_index(index_name, algorithm)
+        logger.info(
+            "CreateIndex: created index id=%s name=%s algorithm=%s",
+            index_id,
+            index_name,
+            algorithm,
+        )
+        return index_id
     
     def get_indexes(self) -> list[Index]:
         """
@@ -138,4 +160,5 @@ class Service:
         for index in indexes:
             if index.index_id == index_id:
                 return index
+
         raise KeyError(f"No index found with id: {index_id}")

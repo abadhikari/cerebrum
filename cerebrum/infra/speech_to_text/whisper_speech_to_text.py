@@ -1,8 +1,11 @@
+import logging
 import numpy as np
 import sounddevice as sd
 import wave
 import tempfile
 from faster_whisper import WhisperModel
+
+logger = logging.getLogger(__name__)
 
 
 class WhisperSpeechToText:
