@@ -59,7 +59,7 @@ class Container:
         sql_producer = SqliteSqlProducer()
         SqliteSchemaManager(sql_client, sql_producer).init()
         repository = SqliteRepository(sql_client, sql_producer)
-        resolver = SimpleResolver(0.1)
+        resolver = SimpleResolver(min_allowed_score=0.05, relative_cutoff_ratio=0.4)
         service = Service(repository, embedder, faiss_client, resolver)
 
         language_model = OllamaModel(self._config.language_model_name, self._config.language_model_temperature)

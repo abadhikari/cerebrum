@@ -54,7 +54,7 @@ def typewriter_spinner(message: str = "..."):
 			stream.flush()
 			time.sleep(0.05)
 			if symbol == message:
-				time.sleep(0.1)
+				time.sleep(0.2)
 			stream.write("\r\033[K")
 			stream.flush()
 	
