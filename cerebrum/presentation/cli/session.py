@@ -48,10 +48,9 @@ class CliSession:
 
 		self._menu_actions = {
 			"1": ("Add Thought", self._action_add_thought),
-			"2": ("Query Thoughts", self._action_query_thoughts),
+			"2": ("Ask Cerebrum", self._action_ask_cerebrum),
 			"3": ("Create Index", self._action_create_index),
-			"4": ("Select Index", self._select_index),
-			"5": ("Ask Cerebrum", self._action_ask_cerebrum)
+			"4": ("Select Index", self._select_index)
 		}
 
 	def run_session(self) -> None:

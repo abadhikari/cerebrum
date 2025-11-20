@@ -1,0 +1,25 @@
+[project]
+name = "cerebrum"
+version = "0.0.1"
+description = "An LLM-connected semantic map that organizes and connects your thoughts and concepts."
+requires-python = ">=3.10"
+dependencies = [
+	"numpy",
+    "faiss-cpu",
+    "sentence-transformers",
+    "faster-whisper",
+	"sounddevice",
+	"ollama",
+	"python-dotenv"
+]
+
+[project.scripts]
+cerebrum-cli = "cerebrum.presentation.cli:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["cerebrum*"]
+exclude = ["data*"]

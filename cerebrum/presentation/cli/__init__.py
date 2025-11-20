@@ -1,0 +1,1 @@
+from cerebrum.presentation.cli.cerebrum_cli import main

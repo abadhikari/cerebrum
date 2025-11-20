@@ -1,3 +1,5 @@
+from typing import Optional
+
 from cerebrum.application.service import Service
 from cerebrum.application.config import Config
 from cerebrum.core.language_model import LanguageModel
@@ -9,8 +11,6 @@ from cerebrum.infra.semantic_store import FaissClient
 from cerebrum.infra.language_model import OllamaModel
 from cerebrum.infra.speech_to_text import WhisperSpeechToText
 from cerebrum.infra.resolver import SimpleResolver
-
-from typing import Optional
 
 
 class Container:
