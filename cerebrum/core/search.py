@@ -14,6 +14,7 @@ class SearchHit:
         score (float): Cosine-similarity score (higher = more similar).
         rank (int): Zero-based rank in the search results.
     """
+
     record: ThoughtRecord
     score: float
     rank: int
@@ -30,6 +31,7 @@ class SearchStatus(StrEnum):
     NO_MATCHES:
         The search completed, but no hits met the resolver's criteria.
     """
+
     OK = "ok"
     NO_EMBEDDINGS = "no_embeddings"
     NO_MATCHES = "no_matches"
@@ -42,8 +44,9 @@ class SearchResult:
 
     Attributes:
         status: A SearchStatus indicating how the search resolved.
-        hits: The ordered list of SearchHit objects that passed resolver filtering. 
+        hits: The ordered list of SearchHit objects that passed resolver filtering.
               This list is non-empty only when status == SearchStatus.OK.
     """
+
     status: SearchStatus
     hits: list[SearchHit]

@@ -8,9 +8,9 @@ from dotenv import load_dotenv
 from cerebrum.application.config import Config
 from cerebrum.application.container import Container
 
-
 # Load env configuration
 load_dotenv()
+
 
 def build_container() -> Container:
     """
@@ -25,5 +25,5 @@ def build_container() -> Container:
         Container: A fully initialized dependency container.
     """
     return Container(
-        config=Config()
+        config=Config(),
     )

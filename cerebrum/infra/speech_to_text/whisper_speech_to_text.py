@@ -1,8 +1,9 @@
 import logging
+import tempfile
+import wave
+
 import numpy as np
 import sounddevice as sd
-import wave
-import tempfile
 from faster_whisper import WhisperModel
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class WhisperSpeechToText:
             samplerate=self.sample_rate,
             channels=1,
             dtype="int16",
-            callback=callback
+            callback=callback,
         )
         stream.start()
 
@@ -76,5 +77,4 @@ class WhisperSpeechToText:
 
         # Run Whisper transcription
         segments, _ = self.model.transcribe(wav_path, language="en")
-        text = "".join(seg.text for seg in segments).strip()
-        return text
+        return "".join(seg.text for seg in segments).strip()

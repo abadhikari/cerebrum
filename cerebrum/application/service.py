@@ -1,12 +1,17 @@
 import logging
 
-from cerebrum.core.thought import Thought
 from cerebrum.core.embedder import Embedder
-from cerebrum.core.semantic_store import Distances, Ids, SemanticStore
-from cerebrum.core.repository import Index, ThoughtRecord, ThoughtRepository, ThoughtStatus
 from cerebrum.core.errors import NoEmbeddingsError
-from cerebrum.core.search import SearchHit, SearchResult, SearchStatus
+from cerebrum.core.repository import (
+    Index,
+    ThoughtRecord,
+    ThoughtRepository,
+    ThoughtStatus,
+)
 from cerebrum.core.resolver import Resolver
+from cerebrum.core.search import SearchHit, SearchResult, SearchStatus
+from cerebrum.core.semantic_store import Distances, Ids, SemanticStore
+from cerebrum.core.thought import Thought
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +21,17 @@ class Service:
     High-level application service coordinating embedding, persistence,
     and semantic search.
 
-    This layer hides infrastructure details and exposes simple operations 
+    This layer hides infrastructure details and exposes simple operations
     for adding thoughts and querying them.
     """
 
-    def __init__(self, thought_repository: ThoughtRepository, embedder: Embedder, semantic_store: SemanticStore, resolver: Resolver):
+    def __init__(
+        self,
+        thought_repository: ThoughtRepository,
+        embedder: Embedder,
+        semantic_store: SemanticStore,
+        resolver: Resolver,
+    ):
         """
         Initialize the service with its dependencies.
 
@@ -39,7 +50,7 @@ class Service:
         self._embedder = embedder
         self._semantic_store = semantic_store
         self._resolver = resolver
-    
+
     def add_thought(self, thought: Thought, index_id: str) -> int:
         """
         Insert a new thought into the system.
@@ -56,7 +67,11 @@ class Service:
         id64 = self._thought_repository.insert_thought(thought, embedding, index_id)
         self._semantic_store.write(embedding.vector, [id64])
         self._thought_repository.complete_thought_insert(id64)
-        logger.info("AddThought: completed insert id64=%s into index=%s", id64, index_id)
+        logger.info(
+            "AddThought: completed insert id64=%s into index=%s",
+            id64,
+            index_id,
+        )
         return id64
 
     def query(self, query: str, index_id: str, k: int) -> SearchResult:
@@ -78,11 +93,15 @@ class Service:
             similarities, ids = self._semantic_store.query(embedding.vector, k)
         except NoEmbeddingsError:
             return SearchResult(
-                status=SearchStatus.NO_EMBEDDINGS, 
-                hits=[]
+                status=SearchStatus.NO_EMBEDDINGS,
+                hits=[],
             )
 
-        thoughts = self._thought_repository.retrieve_thoughts(ids, index_id, ThoughtStatus.ACTIVE)
+        thoughts = self._thought_repository.retrieve_thoughts(
+            ids,
+            index_id,
+            ThoughtStatus.ACTIVE,
+        )
         search_hits = self._create_search_hits(thoughts, similarities, ids)
         result = self._resolver.resolve(search_hits)
 
@@ -94,8 +113,13 @@ class Service:
             len(result.hits),
         )
         return result
-    
-    def _create_search_hits(self, thoughts: list[ThoughtRecord], similarities: Distances, ids: Ids) -> list[SearchHit]:
+
+    def _create_search_hits(
+        self,
+        thoughts: list[ThoughtRecord],
+        similarities: Distances,
+        ids: Ids,
+    ) -> list[SearchHit]:
         """
         Pair repository results with semantic map ranking output.
 
@@ -115,11 +139,11 @@ class Service:
             search_hit = SearchHit(
                 record=thought_record,
                 score=similarity_score,
-                rank=i
+                rank=i,
             )
             search_hits.append(search_hit)
         return search_hits
-    
+
     def create_index(self, index_name: str, algorithm: str) -> str:
         """
         Create a new semantic index in the repository.
@@ -139,7 +163,7 @@ class Service:
             algorithm,
         )
         return index_id
-    
+
     def get_indexes(self) -> list[Index]:
         """
         Return all known semantic indexes.
@@ -148,11 +172,11 @@ class Service:
             list[Index]: Metadata for each index defined in the repository.
         """
         return self._thought_repository.list_indexes()
-    
+
     def get_index_by_id(self, index_id: str) -> Index:
         """
         Return a semantic index based on the index_id.
-        
+
         Raises:
             KeyError: If no index exists with the given ID.
         """

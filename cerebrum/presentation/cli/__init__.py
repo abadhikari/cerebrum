@@ -1,1 +1,1 @@
-from cerebrum.presentation.cli.cerebrum_cli import main
+from .cerebrum_cli import main as main

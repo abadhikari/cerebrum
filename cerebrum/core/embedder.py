@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-import numpy as np
-from numpy.typing  import NDArray
 from typing import Protocol
+
+import numpy as np
+from numpy.typing import NDArray
 
 # Type alias representing a numeric embedding 2D matrix.
 # Each embedding is a NumPy NDArray with a floating-point dtype
@@ -17,19 +18,20 @@ class EmbeddingRecord:
     Represents an embedding vector and its source model.
 
     Attributes:
-        vector (Embedding): The numeric embedding matrix 
+        vector (Embedding): The numeric embedding matrix
             produced by the model.
         model_name (str): The name or identifier of the model used to
             generate the embedding.
     """
+
     vector: Embedding
     model_name: str
 
 
 class Embedder(Protocol):
     """
-    Interface for embedding backends. All concrete embedders must 
-    implement the core methods for single and batched text 
+    Interface for embedding backends. All concrete embedders must
+    implement the core methods for single and batched text
     embeddings, and expose the output dimensionality.
     """
 
@@ -53,7 +55,7 @@ class Embedder(Protocol):
             texts (list[str]): list of text strings to embed.
 
         Returns:
-            EmbeddingRecord: A 2D array of shape (n, dim) embedding and its metadata. 
+            EmbeddingRecord: A 2D array of shape (n, dim) embedding and its metadata.
                              For an empty list, shape (0, dim).
         """
         ...

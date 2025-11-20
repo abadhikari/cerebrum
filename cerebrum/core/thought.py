@@ -3,5 +3,5 @@ from dataclasses import dataclass
 
 @dataclass
 class Thought:
-  body: str
-  tags: list[str]
+    body: str
+    tags: list[str]

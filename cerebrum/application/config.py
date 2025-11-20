@@ -39,16 +39,18 @@ class Config:
 
         self.embedding_model_name: str = self._required_env("EMBEDDING_MODEL_NAME")
         self.language_model_name: str = self._required_env("LANGUAGE_MODEL_NAME")
-        self.language_model_temperature: float = float(self._required_env("LANGUAGE_MODEL_TEMPERATURE"))
+        self.language_model_temperature: float = float(
+            self._required_env("LANGUAGE_MODEL_TEMPERATURE"),
+        )
 
         self.whisper_model_name: str = self._required_env("WHISPER_MODEL_NAME")
-    
+
     def _required_env(self, env_key: str) -> str:
         env_value = os.getenv(env_key)
         if not env_value:
-          raise RuntimeError(f"Required env variable not set: {env_key}")
+            raise RuntimeError(f"Required env variable not set: {env_key}")
         return env_value
-    
+
     @property
     def db_filepath(self) -> Path:
         """

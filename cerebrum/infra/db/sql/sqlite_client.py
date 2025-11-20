@@ -1,5 +1,5 @@
-import sqlite3
 import logging
+import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -10,158 +10,160 @@ logger = logging.getLogger(__name__)
 
 
 class SqliteClient(BaseClient):
-  """
-  SQLite implementation of the SqlClient interface.
-
-  Provides a lightweight, file-based SQL backend with safe parameterized
-  execution and transaction management. Designed for local persistence or
-  low-concurrency applications where a full client/server database would be
-  overkill.
-  """
-
-  def __init__(self, db_filepath: Path, timeout: float = 5.0):
     """
-    Initialize a new SqliteClient.
+    SQLite implementation of the SqlClient interface.
 
-    Args:
-        db_filepath (Path): Path to the SQLite database file.
-        timeout (float): Seconds to wait for a locked database before raising an error.
+    Provides a lightweight, file-based SQL backend with safe parameterized
+    execution and transaction management. Designed for local persistence or
+    low-concurrency applications where a full client/server database would be
+    overkill.
     """
-    self._db_filepath = db_filepath
-    self._timeout = timeout
-    self._connection: sqlite3.Connection | None = None
-  
-  def connect(self):
-    """
-    Establish a connection to the SQLite database if not already connected.
 
-    Configures:
-      - WAL journal mode for concurrent readers/writers.
-      - NORMAL synchronous mode for balanced durability/performance.
-      - Foreign key enforcement.
+    def __init__(self, db_filepath: Path, timeout: float = 5.0):
+        """
+        Initialize a new SqliteClient.
 
-    Idempotent; repeated calls are no-ops once connected.
-    """
-    if self._connection:
-      logger.debug("SqliteClient.connect() called but connection already established.")
-      return
-    
-    logger.info("Connecting to SQLite at %s", self._db_filepath)
-    
-    self._db_filepath.parent.mkdir(parents=True, exist_ok=True) 
+        Args:
+            db_filepath (Path): Path to the SQLite database file.
+            timeout (float): Seconds to wait for a locked database before raising an error.
+        """
+        self._db_filepath = db_filepath
+        self._timeout = timeout
+        self._connection: sqlite3.Connection | None = None
 
-    self._connection = sqlite3.connect(
-      self._db_filepath,
-      timeout=self._timeout,
-      isolation_level=None,  # autocommit ON
-      detect_types=sqlite3.PARSE_DECLTYPES,
-    )
-    self._connection.row_factory = sqlite3.Row
+    def connect(self):
+        """
+        Establish a connection to the SQLite database if not already connected.
 
-    self._connection.execute("PRAGMA journal_mode = WAL;")
-    self._connection.execute("PRAGMA synchronous = NORMAL;")
-    self._connection.execute("PRAGMA foreign_keys = ON;")
+        Configures:
+          - WAL journal mode for concurrent readers/writers.
+          - NORMAL synchronous mode for balanced durability/performance.
+          - Foreign key enforcement.
 
-  def close(self):
-    """
-    Close the active SQLite connection, if present.
+        Idempotent; repeated calls are no-ops once connected.
+        """
+        if self._connection:
+            logger.debug(
+                "SqliteClient.connect() called but connection already established.",
+            )
+            return
 
-    Idempotent; silently ignored if already closed.
-    """
-    if self._connection:
-      logger.debug("Closing SQLite connection to %s", self._db_filepath)
-      self._connection.close()
-      self._connection = None
-  
-  def execute(self, sql: str, params: SqlParams | None = None) -> int:
-    """
-    Execute a non-SELECT SQL statement.
+        logger.info("Connecting to SQLite at %s", self._db_filepath)
 
-    Args:
-        sql: SQL statement with named placeholders (e.g., `UPDATE ... WHERE id = :id`).
-        params: Optional mapping of placeholder names to values. Use `bytes` for BLOBs.
+        self._db_filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    Returns:
-        int: Number of affected rows. SQLite may return -1 for statements where
-             the count is undefined.
+        self._connection = sqlite3.connect(
+            self._db_filepath,
+            timeout=self._timeout,
+            isolation_level=None,  # autocommit ON
+            detect_types=sqlite3.PARSE_DECLTYPES,
+        )
+        self._connection.row_factory = sqlite3.Row
 
-    Raises:
-        sqlite3.Error: If execution fails.
-    """
-    param_keys = list((params or {}).keys())
-    logger.debug("EXECUTE: %s | param_keys=%s", sql, param_keys)
+        self._connection.execute("PRAGMA journal_mode = WAL;")
+        self._connection.execute("PRAGMA synchronous = NORMAL;")
+        self._connection.execute("PRAGMA foreign_keys = ON;")
 
-    cur = self.connection.execute(sql, params or {})
-    return cur.rowcount
-  
-  def query(self, sql: str, params: SqlParams | None = None) -> Rows:
-    """
-    Execute a SELECT statement and return all results as a list of dicts.
+    def close(self):
+        """
+        Close the active SQLite connection, if present.
 
-    Args:
-        sql: SQL SELECT with named placeholders.
-        params: Optional mapping of placeholder names to values.
+        Idempotent; silently ignored if already closed.
+        """
+        if self._connection:
+            logger.debug("Closing SQLite connection to %s", self._db_filepath)
+            self._connection.close()
+            self._connection = None
 
-    Returns:
-        Rows: List of rows, where each row is `dict[str, Any]`.
+    def execute(self, sql: str, params: SqlParams | None = None) -> int:
+        """
+        Execute a non-SELECT SQL statement.
 
-    Raises:
-        sqlite3.Error: If execution fails.
-    """
-    param_keys = list((params or {}).keys())
-    logger.debug("QUERY: %s | param_keys=%s", sql, param_keys)
+        Args:
+            sql: SQL statement with named placeholders (e.g., `UPDATE ... WHERE id = :id`).
+            params: Optional mapping of placeholder names to values. Use `bytes` for BLOBs.
 
-    cur = self.connection.execute(sql, params or {})
-    return [dict(row) for row in cur.fetchall()]
-  
-  def query_one(self, sql: str, params: SqlParams | None = None) -> Row | None:
-    """
-    Execute a statement that returns a single row.
+        Returns:
+            int: Number of affected rows. SQLite may return -1 for statements where
+                 the count is undefined.
 
-    Args:
-        sql: SQL statement (SELECT or RETURNING ...).
-        params: Optional mapping of placeholder names to values.
+        Raises:
+            sqlite3.Error: If execution fails.
+        """
+        param_keys = list((params or {}).keys())
+        logger.debug("EXECUTE: %s | param_keys=%s", sql, param_keys)
 
-    Returns:
-        Row: The first row as a dict, or None if no results.
-    """
-    rows = self.query(sql, params)
-    return rows[0] if rows else None
+        cur = self.connection.execute(sql, params or {})
+        return cur.rowcount
 
-  @property
-  def connection(self) -> sqlite3.Connection:
-      """
-      Active SQLite connection.
+    def query(self, sql: str, params: SqlParams | None = None) -> Rows:
+        """
+        Execute a SELECT statement and return all results as a list of dicts.
 
-      Returns:
-          sqlite3.Connection: Current connection object.
+        Args:
+            sql: SQL SELECT with named placeholders.
+            params: Optional mapping of placeholder names to values.
 
-      Raises:
-          RuntimeError: If called before `connect()` is invoked.
-      """
-      if not self._connection:
-          raise RuntimeError("Database not connected. Call connect() first.")
-      return self._connection
+        Returns:
+            Rows: List of rows, where each row is `dict[str, Any]`.
 
-  @contextmanager
-  def transaction(self):
-    """
-    Context manager for explicit transaction control.
+        Raises:
+            sqlite3.Error: If execution fails.
+        """
+        param_keys = list((params or {}).keys())
+        logger.debug("QUERY: %s | param_keys=%s", sql, param_keys)
 
-    Begins an `IMMEDIATE` transaction on entry, commits on success,
-    and rolls back on exception or keyboard interrupt.
+        cur = self.connection.execute(sql, params or {})
+        return [dict(row) for row in cur.fetchall()]
 
-    Example:
-        >>> with client.transaction():
-        ...     client.execute("INSERT INTO t (a) VALUES (:a)", {"a": 1})
-        ...     client.execute("UPDATE t SET a = :a WHERE id = :id", {"a": 2, "id": 5})
-    """
-    connection = self.connection
-    try:
-      connection.execute("BEGIN IMMEDIATE;")
-      yield
-      connection.execute("COMMIT;")
-    except (Exception, KeyboardInterrupt) as e:
-      connection.execute("ROLLBACK;")
-      logger.warning("Transaction rolled back due to: %s", e)
-      raise
+    def query_one(self, sql: str, params: SqlParams | None = None) -> Row | None:
+        """
+        Execute a statement that returns a single row.
+
+        Args:
+            sql: SQL statement (SELECT or RETURNING ...).
+            params: Optional mapping of placeholder names to values.
+
+        Returns:
+            Row: The first row as a dict, or None if no results.
+        """
+        rows = self.query(sql, params)
+        return rows[0] if rows else None
+
+    @property
+    def connection(self) -> sqlite3.Connection:
+        """
+        Active SQLite connection.
+
+        Returns:
+            sqlite3.Connection: Current connection object.
+
+        Raises:
+            RuntimeError: If called before `connect()` is invoked.
+        """
+        if not self._connection:
+            raise RuntimeError("Database not connected. Call connect() first.")
+        return self._connection
+
+    @contextmanager
+    def transaction(self):
+        """
+        Context manager for explicit transaction control.
+
+        Begins an `IMMEDIATE` transaction on entry, commits on success,
+        and rolls back on exception or keyboard interrupt.
+
+        Example:
+            >>> with client.transaction():
+            ...     client.execute("INSERT INTO t (a) VALUES (:a)", {"a": 1})
+            ...     client.execute("UPDATE t SET a = :a WHERE id = :id", {"a": 2, "id": 5})
+        """
+        connection = self.connection
+        try:
+            connection.execute("BEGIN IMMEDIATE;")
+            yield
+            connection.execute("COMMIT;")
+        except (Exception, KeyboardInterrupt) as e:
+            connection.execute("ROLLBACK;")
+            logger.warning("Transaction rolled back due to: %s", e)
+            raise

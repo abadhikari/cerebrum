@@ -13,6 +13,9 @@ dependencies = [
 	"python-dotenv"
 ]
 
+[project.optional-dependencies]
+dev = ["ruff", "black"]
+
 [project.scripts]
 cerebrum-cli = "cerebrum.presentation.cli:main"
 
@@ -23,3 +26,20 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["cerebrum*"]
 exclude = ["data*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+extend-exclude = "cerebrum\\.egg-info|data"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "COM", "RET", "SIM"]
+extend-ignore = ["E501"]  # ignore line too long; Black owns formatting
+
+[tool.ruff.lint.isort]
+known-first-party = ["cerebrum"]
+combine-as-imports = true

@@ -1,16 +1,16 @@
 from typing import Optional
 
-from cerebrum.application.service import Service
 from cerebrum.application.config import Config
+from cerebrum.application.service import Service
 from cerebrum.core.language_model import LanguageModel
 from cerebrum.core.speech_to_text import SpeechToText
-from cerebrum.infra.db import SqliteClient, SqliteSqlProducer, SqliteSchemaManager
-from cerebrum.infra.repository import SqliteRepository
+from cerebrum.infra.db import SqliteClient, SqliteSchemaManager, SqliteSqlProducer
 from cerebrum.infra.embedder import SentenceTransformerEmbedder
-from cerebrum.infra.semantic_store import FaissClient
 from cerebrum.infra.language_model import OllamaModel
-from cerebrum.infra.speech_to_text import WhisperSpeechToText
+from cerebrum.infra.repository import SqliteRepository
 from cerebrum.infra.resolver import SimpleResolver
+from cerebrum.infra.semantic_store import FaissClient
+from cerebrum.infra.speech_to_text import WhisperSpeechToText
 
 
 class Container:
@@ -22,7 +22,7 @@ class Container:
     high-level `Service`. Nothing is constructed until `start()` is
     called, ensuring explicit, predictable initialization.
 
-    The container also handles cleanup via `stop()`, flushing the semantic 
+    The container also handles cleanup via `stop()`, flushing the semantic
     map to disk and closing database connections.
     """
 
@@ -44,16 +44,19 @@ class Container:
         self._language_model: Optional[OllamaModel] = None
         self._speech_to_text: Optional[WhisperSpeechToText] = None
         self._resolver: Optional[SimpleResolver] = None
-        
+
         self._started = False
-  
+
     def start(self) -> None:
         """Initialize all dependencies and build the application service."""
         if self._started:
             return
 
         embedder = SentenceTransformerEmbedder(self._config.embedding_model_name)
-        faiss_client = FaissClient(self._config.faiss_filepath, embedder.get_dimensions())
+        faiss_client = FaissClient(
+            self._config.faiss_filepath,
+            embedder.get_dimensions(),
+        )
         sql_client = SqliteClient(self._config.db_filepath)
         sql_client.connect()
         sql_producer = SqliteSqlProducer()
@@ -62,7 +65,10 @@ class Container:
         resolver = SimpleResolver(min_allowed_score=0.05, relative_cutoff_ratio=0.4)
         service = Service(repository, embedder, faiss_client, resolver)
 
-        language_model = OllamaModel(self._config.language_model_name, self._config.language_model_temperature)
+        language_model = OllamaModel(
+            self._config.language_model_name,
+            self._config.language_model_temperature,
+        )
         speech_to_text = WhisperSpeechToText(self._config.whisper_model_name)
 
         self._faiss_client = faiss_client
@@ -74,7 +80,7 @@ class Container:
         self._resolver = resolver
 
         self._started = True
-    
+
     def stop(self) -> None:
         """Tear down all managed resources."""
         if not self._started:
@@ -86,7 +92,7 @@ class Container:
         finally:
             if self._sql_client:
                 self._sql_client.close()
-            
+
             self._faiss_client = None
             self._sql_client = None
             self._service = None
@@ -95,7 +101,7 @@ class Container:
             self._speech_to_text = None
             self._resolver = None
             self._started = False
-    
+
     def __enter__(self) -> "Container":
         self.start()
         return self
@@ -116,11 +122,11 @@ class Container:
         """
         self._check_started()
         return self._service
-    
+
     def _check_started(self) -> None:
         if not self._started:
             raise RuntimeError("Container has not been started. Call start() first.")
-    
+
     @property
     def language_model(self) -> LanguageModel:
         """
