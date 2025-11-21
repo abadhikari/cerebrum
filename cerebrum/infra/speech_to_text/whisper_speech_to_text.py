@@ -4,7 +4,6 @@ import wave
 
 import numpy as np
 import sounddevice as sd
-from faster_whisper import WhisperModel
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,9 @@ class WhisperSpeechToText:
                 (e.g., "small.en").
             sample_rate (int): Recording sample rate in Hz.
         """
+
+        from faster_whisper import WhisperModel
+
         self.sample_rate = sample_rate
         self.model = WhisperModel(model_name, device="cpu", compute_type="int8")
 

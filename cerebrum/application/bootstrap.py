@@ -1,18 +1,26 @@
 import os
 
-# Prevent OpenMP thread contention
-os.environ["OMP_NUM_THREADS"] = "1"
-
 from dotenv import load_dotenv
 
 from cerebrum.application.config import Config
 from cerebrum.application.container import Container
 
-# Load env configuration
-load_dotenv()
+
+def init_environment() -> None:
+    """
+    One-time process bootstrap.
+
+    - Set env knobs (like OpenMP threads)
+    - Load .env file
+    """
+    # Prevent OpenMP thread contention
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+    # Load env configuration
+    load_dotenv()
 
 
-def build_container() -> Container:
+def build_container(config: Config) -> Container:
     """
     Assemble and return the application's dependency container.
 
@@ -25,5 +33,5 @@ def build_container() -> Container:
         Container: A fully initialized dependency container.
     """
     return Container(
-        config=Config(),
+        config=config,
     )

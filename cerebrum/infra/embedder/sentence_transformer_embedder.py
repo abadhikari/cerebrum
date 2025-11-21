@@ -1,5 +1,4 @@
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from cerebrum.core.embedder import EmbeddingRecord
 
@@ -27,6 +26,9 @@ class SentenceTransformerEmbedder:
         """
         if not np.issubdtype(dtype, np.floating):
             raise TypeError(f"dtype must be a floating-point dtype. Got {dtype}")
+
+        # Lazy import to avoid heavy work at module import time
+        from sentence_transformers import SentenceTransformer
 
         self._model = SentenceTransformer(model_name)
         self._model_name = model_name
