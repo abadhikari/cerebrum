@@ -265,7 +265,7 @@ class CliSession:
     def _ask_cerebrum_chat_loop(self, messages: list):
         print("\n---- START OF CEREBRUM CHAT ----\n")
         while True:
-            with typewriter_spinner(message="Thinking ..."):
+            with typewriter_spinner(message=["Thinking ..."]):
                 response = self._model.call(messages)
             print(f"Cerebrum: {response}")
             messages.append({"role": "assistant", "content": response})
