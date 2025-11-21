@@ -6,12 +6,12 @@ from cerebrum.core.repository import Index
 from cerebrum.core.search import SearchResult, SearchStatus
 from cerebrum.core.speech_to_text import SpeechToText
 from cerebrum.core.thought import Thought
-from cerebrum.presentation.cli.prompts import (
+from cerebrum.cli.prompts import (
     CEREBRUM_CHAT_SYSTEM_PROMPT,
     THOUGHT_COACH_SYSTEM_PROMPT,
 )
-from cerebrum.presentation.cli.spinner import typewriter_spinner
-from cerebrum.presentation.cli.views import (
+from cerebrum.cli.spinner import typewriter_spinner
+from cerebrum.cli.views import (
     print_banner,
     print_indexes,
     print_menu,

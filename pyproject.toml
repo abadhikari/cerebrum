@@ -17,7 +17,7 @@ dependencies = [
 dev = ["ruff", "black"]
 
 [project.scripts]
-cerebrum-cli = "cerebrum.presentation.cli:main"
+cerebrum-cli = "cerebrum.cli.main:main"
 
 [build-system]
 requires = ["setuptools", "wheel"]
