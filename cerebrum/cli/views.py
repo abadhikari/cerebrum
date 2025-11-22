@@ -53,5 +53,5 @@ def print_search_result(search_result: SearchResult) -> None:
         print(
             f"thought: {hit.record.body}\n"
             f"tags: {hit.record.tags}\n"
-            f"score: {hit.score}\n",
+            f"score: {hit.score:.3f}\n",
         )

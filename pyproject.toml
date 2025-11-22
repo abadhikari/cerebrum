@@ -10,7 +10,8 @@ dependencies = [
     "faster-whisper",
 	"sounddevice",
 	"ollama",
-	"python-dotenv"
+	"python-dotenv",
+	"click"
 ]
 
 [project.optional-dependencies]

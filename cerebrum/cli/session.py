@@ -1,5 +1,7 @@
 from typing import Optional
 
+import click
+
 from cerebrum.application.service import Service
 from cerebrum.core.language_model import LanguageModel
 from cerebrum.core.repository import Index
@@ -20,7 +22,7 @@ from cerebrum.cli.views import (
 )
 
 VOICE_COMMAND = "/v"
-
+QUIT_COMMAND = "/q"
 
 class CliSession:
     """
@@ -144,7 +146,7 @@ class CliSession:
         if body is None:
             print("\nAdd thought canceled.\n")
             return
-
+        
         tags = self._read_tags_input()
         print()
         thought = Thought(body, tags)
@@ -153,12 +155,12 @@ class CliSession:
 
     def _read_thought_input(self, input_text: str) -> str:
         command_options = f"{VOICE_COMMAND} for voice input"
-        thought = input(f"{input_text} [{command_options}]: ").strip()
+        thought = input(f"{input_text} [{command_options}]: ")
 
         if thought == VOICE_COMMAND:
             thought = self._speech_to_text.transcribe()
             print(f"Recorded thought: {thought}")
-        return thought
+        return thought.strip()
 
     def _thought_coach_loop(self, index: Index) -> str | None:
         """
@@ -173,31 +175,50 @@ class CliSession:
         Returns:
             The final thought text after zero or more refinement steps or None.
         """
-        body = self._read_thought_input("Enter your thought (/q to cancel)")
-        if body in {"/q", "/quit", ""}:
+        body = self._read_thought_input(f"Enter your thought ({QUIT_COMMAND} to cancel)")
+        if body in {QUIT_COMMAND, ""}:
             return None
 
         max_num_loops = 3
         for _ in range(max_num_loops):
-            user_thought = f"user thought: {body}"
-            messages = [
-                {"role": "system", "content": THOUGHT_COACH_SYSTEM_PROMPT},
-                {"role": "user", "content": user_thought},
-            ]
-            print("\n==== Thought Coach Feedback ====\n")
-            print(self._model.call(messages))
+            self._run_thought_coach_round(body, index)
 
-            self._similar_thought_check(body, index)
-
-            rewrite = self._read_thought_input(
-                "\nRewrite (press enter if no change required, /q to cancel)",
-            )
-            if not rewrite:
-                break
-            if rewrite in {"/q", "/quit"}:
+            rewrite_decision = input(f"\nWould you like to rewrite? (y/n, {QUIT_COMMAND} to cancel): ").strip().lower()
+            if rewrite_decision == QUIT_COMMAND:
                 return None
-            body = rewrite
+            if rewrite_decision != "y":
+                break
+
+            edited = click.edit(text=body, require_save=True)
+            if edited is None:
+                return None
+
+            edited = edited.strip()
+            if edited == "" or edited == body:
+                break
+            body = edited 
         return body
+    
+    def _run_thought_coach_round(self, body: str, index: Index) -> str:
+        """
+        Run a single Thought Coach round: generate feedback, show it,
+        check for similar thoughts, and print the current draft.
+
+        Returns:
+            The feedback text (useful if you ever want to reuse/reprint).
+        """
+        user_thought = f"user thought: {body}"
+        messages = [
+            {"role": "system", "content": THOUGHT_COACH_SYSTEM_PROMPT},
+            {"role": "user", "content": user_thought},
+        ]
+        print("\n==== Thought Coach Feedback ====\n")
+        print(self._model.call(messages))
+
+        self._similar_thought_check(body, index)
+
+        print("\n---- Current Draft ----\n")
+        print(body)
 
     def _similar_thought_check(self, body: str, index: Index) -> None:
         """
@@ -212,7 +233,7 @@ class CliSession:
         if len(hits):
             similar_thought = hits[0]
             print(f"\nClosest match: {similar_thought.record.body}")
-            print(f"Similarity score: {similar_thought.score}")
+            print(f"Similarity score: {similar_thought.score:.3f}")
             return
         print("No similar thoughts!")
 
@@ -317,7 +338,7 @@ class CliSession:
             messages.append({"role": "assistant", "content": response})
 
             user_input = input("\nYou: ").strip()
-            if user_input.lower() in {"/quit", "/q"}:
+            if user_input.lower() in {QUIT_COMMAND}:
                 print("\n---- END OF CHAT ----\n")
                 break
             messages.append({"role": "user", "content": user_input})

@@ -15,6 +15,7 @@ def init_environment() -> None:
     """
     # Prevent OpenMP thread contention
     os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     # Load env configuration
     load_dotenv()
