@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime, timezone
 
 import click
 
@@ -153,15 +154,6 @@ class CliSession:
 
         self._service.add_thought(thought, index.index_id)
 
-    def _read_thought_input(self, input_text: str) -> str:
-        command_options = f"{VOICE_COMMAND} for voice input"
-        thought = input(f"{input_text} [{command_options}]: ")
-
-        if thought == VOICE_COMMAND:
-            thought = self._speech_to_text.transcribe()
-            print(f"Recorded thought: {thought}")
-        return thought.strip()
-
     def _thought_coach_loop(self, index: Index) -> str | None:
         """
         Run the iterative Cerebrum Thought Coach refinement loop.
@@ -175,7 +167,7 @@ class CliSession:
         Returns:
             The final thought text after zero or more refinement steps or None.
         """
-        body = self._read_thought_input(f"Enter your thought ({QUIT_COMMAND} to cancel)")
+        body = self._capture_text_input(f"Enter your thought ({QUIT_COMMAND} to cancel)")
         if body in {QUIT_COMMAND, ""}:
             return None
 
@@ -198,6 +190,15 @@ class CliSession:
                 break
             body = edited 
         return body
+
+    def _capture_text_input(self, input_text: str) -> str:
+        command_options = f"{VOICE_COMMAND} for voice input"
+        thought = input(f"{input_text} [{command_options}]: ")
+
+        if thought == VOICE_COMMAND:
+            thought = self._speech_to_text.transcribe()
+            print(f"Recorded: {thought}")
+        return thought.strip()
     
     def _run_thought_coach_round(self, body: str, index: Index) -> str:
         """
@@ -213,12 +214,13 @@ class CliSession:
             {"role": "user", "content": user_thought},
         ]
         print("\n==== Thought Coach Feedback ====\n")
-        print(self._model.call(messages))
-
+        feedback = self._model.call(messages)
+        print(feedback)
         self._similar_thought_check(body, index)
 
         print("\n---- Current Draft ----\n")
         print(body)
+        return feedback
 
     def _similar_thought_check(self, body: str, index: Index) -> None:
         """
@@ -291,7 +293,7 @@ class CliSession:
         Optionally prints the raw semantic search hits before the answer.
         """
         print("\n==== ASK CEREBRUM ====\n")
-        query = input("Enter your query: ")
+        query = self._capture_text_input("Enter your query")
         k = int(input("Enter your k value: "))
         see_semantic_results = input(
             "Would you like to see the semantic results? (y/n): ",
@@ -309,10 +311,20 @@ class CliSession:
             print_search_result(search_result)
 
         formatted_search_result = self._format_search_results_for_context(search_result)
-        user_context = f"user_query: {query}\n" f"search_result: {formatted_search_result}"
+        result_context = (
+            "=== Retrieved Thoughts ===\n"
+            f"{formatted_search_result}\n"
+            "=== End Thoughts ==="
+        )
+        now = datetime.now(timezone.utc)
+        system_context = (
+            CEREBRUM_CHAT_SYSTEM_PROMPT +
+            f"Current date (for reference): {now.isoformat()}"
+        )
         messages = [
-            {"role": "system", "content": CEREBRUM_CHAT_SYSTEM_PROMPT},
-            {"role": "user", "content": user_context},
+            {"role": "system", "content": system_context},
+            {"role": "assistant", "content": result_context},
+            {"role": "user", "content": query},
         ]
         self._ask_cerebrum_chat_loop(messages)
     
@@ -337,7 +349,7 @@ class CliSession:
             print(f"Cerebrum: {response}")
             messages.append({"role": "assistant", "content": response})
 
-            user_input = input("\nYou: ").strip()
+            user_input = self._capture_text_input("\nYou")
             if user_input.lower() in {QUIT_COMMAND}:
                 print("\n---- END OF CHAT ----\n")
                 break
