@@ -44,7 +44,7 @@ def print_box_text(text: str) -> None:
 def print_menu(menu_actions: dict[str, tuple[str, object]]) -> None:
     print("\n=== MENU ===")
     for key, (label, _) in menu_actions.items():
-        print(f"{key}. {label}")
+        print(f"[{key}] {label}")
 
 
 def print_search_result(search_result: SearchResult) -> None:

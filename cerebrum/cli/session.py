@@ -51,12 +51,12 @@ class CliSession:
         self._speech_to_text = speech_to_text
 
         self._selected_index: Optional[Index] = None
+        self._should_exit = False
 
         self._menu_actions = {
             "1": ("Add Thought", self._action_add_thought),
             "2": ("Ask Cerebrum", self._action_ask_cerebrum),
-            "3": ("Create Index", self._action_create_index),
-            "4": ("Select Index", self._select_index),
+            "3": ("Exit Cerebrum", self._action_close_cerebrum)
         }
 
     def run_session(self) -> None:
@@ -79,7 +79,7 @@ class CliSession:
             )
 
             print_menu(self._menu_actions)
-            choice = input("\nEnter choice: ").strip()
+            choice = input("\nEnter choice (number): ").strip()
             entry = self._menu_actions.get(choice)
 
             if entry is None:
@@ -87,6 +87,9 @@ class CliSession:
             else:
                 _, menu_action = entry
                 menu_action()
+
+            if self._should_exit:
+                break
 
     def _select_index(self) -> None:
         indexes = self._service.get_indexes()
@@ -136,9 +139,8 @@ class CliSession:
     def _action_add_thought(self) -> None:
         print("\n==== ADD THOUGHT ====\n")
         index = self._require_index()
-        raw_body = self._read_thought_input("Enter your thought")
 
-        body = self._thought_coach_loop(raw_body, index)
+        body = self._thought_coach_loop(index)
         if body is None:
             print("\nAdd thought canceled.\n")
             return
@@ -158,7 +160,7 @@ class CliSession:
             print(f"Recorded thought: {thought}")
         return thought
 
-    def _thought_coach_loop(self, initial_body: str, index: Index) -> str | None:
+    def _thought_coach_loop(self, index: Index) -> str | None:
         """
         Run the iterative Cerebrum Thought Coach refinement loop.
 
@@ -166,13 +168,15 @@ class CliSession:
         The loop is capped at max_num_loops and exits early if the user accepts.
 
         Args:
-            initial_body: The original, raw thought text.
             index: The active Index to query for potential collisions.
 
         Returns:
             The final thought text after zero or more refinement steps or None.
         """
-        body = initial_body
+        body = self._read_thought_input("Enter your thought (/q to cancel)")
+        if body in {"/q", "/quit", ""}:
+            return None
+
         max_num_loops = 3
         for _ in range(max_num_loops):
             user_thought = f"user thought: {body}"
@@ -283,12 +287,27 @@ class CliSession:
         if see_semantic_results.strip().lower() == "y":
             print_search_result(search_result)
 
-        user_context = f"user_query: {query}\n" f"search_hits: {search_result.hits}"
+        formatted_search_result = self._format_search_results_for_context(search_result)
+        user_context = f"user_query: {query}\n" f"search_result: {formatted_search_result}"
+        print(user_context)
         messages = [
             {"role": "system", "content": CEREBRUM_CHAT_SYSTEM_PROMPT},
             {"role": "user", "content": user_context},
         ]
         self._ask_cerebrum_chat_loop(messages)
+    
+    def _format_search_results_for_context(self, search_result: SearchResult) -> str:
+        lines = []
+        for hit in search_result.hits:
+            record = hit.record
+            line = (
+                f"[rank={hit.rank}] score={hit.score:.3f}\n"
+                f"tags: {record.tags}\n"
+                f"thought: {record.body}\n"
+                f"created_at: {record.created_at.isoformat()}"
+            )
+            lines.append(line)
+        return "\n\n".join(lines)
 
     def _ask_cerebrum_chat_loop(self, messages: list):
         print("\n---- START OF CEREBRUM CHAT ----\n")
@@ -303,3 +322,7 @@ class CliSession:
                 print("\n---- END OF CHAT ----\n")
                 break
             messages.append({"role": "user", "content": user_input})
+    
+    def _action_close_cerebrum(self):
+        print("Exiting Cerebrum...")
+        self._should_exit = True
