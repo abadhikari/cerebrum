@@ -16,7 +16,7 @@ from cerebrum.cli.views import (
     print_indexes,
     print_menu,
     print_search_result,
-    print_box_text
+    print_box_text,
 )
 
 VOICE_COMMAND = "/v"
@@ -74,7 +74,9 @@ class CliSession:
                 self._select_index()
 
             index = self._require_index()
-            print_box_text(f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}")
+            print_box_text(
+                f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}"
+            )
 
             print_menu(self._menu_actions)
             choice = input("\nEnter choice: ").strip()
@@ -133,13 +135,13 @@ class CliSession:
 
     def _action_add_thought(self) -> None:
         print("\n==== ADD THOUGHT ====\n")
+        index = self._require_index()
         raw_body = self._read_thought_input("Enter your thought")
-        body = self._thought_coach_loop(raw_body)
+        body = self._thought_coach_loop(raw_body, index)
         tags = self._read_tags_input()
         print()
         thought = Thought(body, tags)
 
-        index = self._require_index()
         self._service.add_thought(thought, index.index_id)
 
     def _read_thought_input(self, input_text: str) -> str:
@@ -151,15 +153,16 @@ class CliSession:
             print(f"Recorded thought: {thought}")
         return thought
 
-    def _thought_coach_loop(self, initial_body: str) -> str:
+    def _thought_coach_loop(self, initial_body: str, index: Index) -> str:
         """
-                Run the iterative Cerebrum Thought Coach refinement loop.
+        Run the iterative Cerebrum Thought Coach refinement loop.
 
-                This enforces a minimum quality bar and reduces noise in stored thoughts.
-                The loop is capped at max_num_loops and exits early if the user accepts.
+        This enforces a minimum quality bar and reduces noise in stored thoughts.
+        The loop is capped at max_num_loops and exits early if the user accepts.
 
         Args:
             initial_body: The original, raw thought text.
+            index: The active Index to query for potential collisions.
 
         Returns:
             The final thought text after zero or more refinement steps.
@@ -175,6 +178,8 @@ class CliSession:
             print("\n==== Thought Coach Feedback ====\n")
             print(self._model.call(messages))
 
+            self._similar_thought_check(body, index)
+
             rewrite = self._read_thought_input(
                 "\nRewrite (press enter if no change required)",
             )
@@ -183,6 +188,23 @@ class CliSession:
             else:
                 break
         return body
+
+    def _similar_thought_check(self, body: str, index: Index) -> None:
+        """
+        Surface the nearest semantic neighbor for a candidate thought.
+
+        Args:
+            body: The text of the candidate thought (post-Coach).
+            index: The active Index to query for potential collisions.
+        """
+        search_result = self._service.query(body, index.index_id, 1)
+        hits = search_result.hits
+        if len(hits):
+            similar_thought = hits[0]
+            print(f"\nClosest match: {similar_thought.record.body}")
+            print(f"Similarity score: {similar_thought.score}")
+            return
+        print("No similar thoughts!")
 
     def _read_tags_input(self) -> list[str]:
         """

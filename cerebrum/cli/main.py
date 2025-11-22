@@ -52,30 +52,32 @@ def run_cli(container: Container) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-	"""
-	Main CLI entrypoint.
+    """
+    Main CLI entrypoint.
 
-	Configures logging, builds the application container,
-	and runs the interactive CLI session. Returns a Unix-style
-	exit code (0 success, 1 failure).
-	"""
-	init_environment()
+    Configures logging, builds the application container,
+    and runs the interactive CLI session. Returns a Unix-style
+    exit code (0 success, 1 failure).
+    """
+    init_environment()
 
-	args = parse_args(argv)
-	init_logging(verbose=args.verbose, debug=args.debug)
+    args = parse_args(argv)
+    init_logging(verbose=args.verbose, debug=args.debug)
 
-	logger.info("Starting Cerebrum CLI session")
-	config = Config()
-	container = build_container(config)
+    logger.info("Starting Cerebrum CLI session")
+    config = Config()
+    container = build_container(config)
 
-	try:
-		with typewriter_spinner(messages=["Booting Cerebrum ;)",  "(this might take a while)"]):
-			container.start()
-	except Exception:
-		logger.exception("Error during Cerebrum bootstrap:")
-		return 1
+    try:
+        with typewriter_spinner(
+            messages=["Booting Cerebrum ;)", "(this might take a while)"]
+        ):
+            container.start()
+    except Exception:
+        logger.exception("Error during Cerebrum bootstrap:")
+        return 1
 
-	return run_cli(container)
+    return run_cli(container)
 
 
 if __name__ == "__main__":
