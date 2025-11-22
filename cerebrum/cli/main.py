@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
 	container = build_container(config)
 
 	try:
-		with typewriter_spinner(["Booting Cerebrum ;)",  "(this might take a while)"]):
+		with typewriter_spinner(messages=["Booting Cerebrum ;)",  "(this might take a while)"]):
 			container.start()
 	except Exception:
 		logger.exception("Error during Cerebrum bootstrap:")

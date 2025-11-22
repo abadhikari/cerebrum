@@ -16,6 +16,7 @@ from cerebrum.cli.views import (
     print_indexes,
     print_menu,
     print_search_result,
+    print_box_text
 )
 
 VOICE_COMMAND = "/v"
@@ -73,9 +74,7 @@ class CliSession:
                 self._select_index()
 
             index = self._require_index()
-            print(
-                f"\n----> Selected Index: name - {index.index_name}, id - {index.index_id}, created - {index.created_at.isoformat()} <----",
-            )
+            print_box_text(f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}")
 
             print_menu(self._menu_actions)
             choice = input("\nEnter choice: ").strip()
@@ -137,6 +136,7 @@ class CliSession:
         raw_body = self._read_thought_input("Enter your thought")
         body = self._thought_coach_loop(raw_body)
         tags = self._read_tags_input()
+        print()
         thought = Thought(body, tags)
 
         index = self._require_index()
@@ -265,7 +265,7 @@ class CliSession:
     def _ask_cerebrum_chat_loop(self, messages: list):
         print("\n---- START OF CEREBRUM CHAT ----\n")
         while True:
-            with typewriter_spinner(message=["Thinking ..."]):
+            with typewriter_spinner(messages=["Thinking ..."]):
                 response = self._model.call(messages)
             print(f"Cerebrum: {response}")
             messages.append({"role": "assistant", "content": response})
