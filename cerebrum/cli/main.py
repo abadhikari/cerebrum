@@ -70,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         with typewriter_spinner(
-            messages=["Booting Cerebrum ;)", "(this might take a while)"]
+            messages=["Booting Cerebrum ...", "(this might take a while)"]
         ):
             container.start()
     except Exception:

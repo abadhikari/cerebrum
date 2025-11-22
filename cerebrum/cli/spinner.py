@@ -58,7 +58,7 @@ def typewriter_spinner(messages: list[str]):
             stream.flush()
             time.sleep(0.05)
             if symbol in full_messages:
-                time.sleep(0.2)
+                time.sleep(0.3)
             stream.write("\r\033[K")
             stream.flush()
 

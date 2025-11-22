@@ -137,7 +137,12 @@ class CliSession:
         print("\n==== ADD THOUGHT ====\n")
         index = self._require_index()
         raw_body = self._read_thought_input("Enter your thought")
+
         body = self._thought_coach_loop(raw_body, index)
+        if body is None:
+            print("\nAdd thought canceled.\n")
+            return
+
         tags = self._read_tags_input()
         print()
         thought = Thought(body, tags)
@@ -153,7 +158,7 @@ class CliSession:
             print(f"Recorded thought: {thought}")
         return thought
 
-    def _thought_coach_loop(self, initial_body: str, index: Index) -> str:
+    def _thought_coach_loop(self, initial_body: str, index: Index) -> str | None:
         """
         Run the iterative Cerebrum Thought Coach refinement loop.
 
@@ -165,7 +170,7 @@ class CliSession:
             index: The active Index to query for potential collisions.
 
         Returns:
-            The final thought text after zero or more refinement steps.
+            The final thought text after zero or more refinement steps or None.
         """
         body = initial_body
         max_num_loops = 3
@@ -181,12 +186,13 @@ class CliSession:
             self._similar_thought_check(body, index)
 
             rewrite = self._read_thought_input(
-                "\nRewrite (press enter if no change required)",
+                "\nRewrite (press enter if no change required, /q to cancel)",
             )
-            if rewrite:
-                body = rewrite
-            else:
+            if not rewrite:
                 break
+            if rewrite in {"/q", "/quit"}:
+                return None
+            body = rewrite
         return body
 
     def _similar_thought_check(self, body: str, index: Index) -> None:
