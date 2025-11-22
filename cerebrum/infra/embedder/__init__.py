@@ -1,4 +1,4 @@
-from cerebrum.infra.embedder.sentence_transformer_embedder import (
+from .sentence_transformer_embedder import (
     SentenceTransformerEmbedder,
 )
 

@@ -289,7 +289,6 @@ class CliSession:
 
         formatted_search_result = self._format_search_results_for_context(search_result)
         user_context = f"user_query: {query}\n" f"search_result: {formatted_search_result}"
-        print(user_context)
         messages = [
             {"role": "system", "content": CEREBRUM_CHAT_SYSTEM_PROMPT},
             {"role": "user", "content": user_context},

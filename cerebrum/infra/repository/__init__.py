@@ -1,4 +1,4 @@
-from cerebrum.infra.repository.sqlite_repository import SqliteRepository
+from .sqlite_repository import SqliteRepository
 
 __all__ = [
     "SqliteRepository",
