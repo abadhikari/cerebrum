@@ -23,9 +23,11 @@ from cerebrum.cli.views import (
     print_box_text,
 )
 
+
 class Command(StrEnum):
     VOICE = "/v"
     QUIT = "/q"
+
 
 class CliSession:
     """
@@ -61,7 +63,7 @@ class CliSession:
         self._menu_actions = {
             "1": ("Add Thought", self._action_add_thought),
             "2": ("Ask Cerebrum", self._action_ask_cerebrum),
-            "3": ("Exit Cerebrum", self._action_close_cerebrum)
+            "3": ("Exit Cerebrum", self._action_close_cerebrum),
         }
 
     def run_session(self) -> None:
@@ -80,7 +82,7 @@ class CliSession:
                 print_box_text(
                     f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}"
                 )
-            
+
             self._require_index()
             print_menu(self._menu_actions)
             choice = input("\nEnter choice (number): ").strip()
@@ -135,7 +137,7 @@ class CliSession:
         Return the currently selected index.
 
         Raises:
-                RuntimeError: If no index has been selected.
+            RuntimeError: If no index has been selected.
 
         This enforces the invariant that all CLI actions must operate
         on a valid, user-chosen index.
@@ -152,7 +154,7 @@ class CliSession:
         if body is None:
             print("\nAdd thought canceled.\n")
             return
-        
+
         tags = self._read_tags_input()
         print()
         thought = Thought(body, tags)
@@ -172,7 +174,9 @@ class CliSession:
         Returns:
             The final thought text after zero or more refinement steps or None.
         """
-        body = self._capture_text_input(f"Enter your thought ({Command.QUIT} to cancel)")
+        body = self._capture_text_input(
+            f"Enter your thought ({Command.QUIT} to cancel)"
+        )
         if body in {Command.QUIT, ""}:
             return None
 
@@ -180,7 +184,11 @@ class CliSession:
         for _ in range(max_num_loops):
             self._run_thought_coach_round(body, index)
 
-            rewrite_decision = input(f"\nWould you like to rewrite? (y/n, {Command.QUIT} to cancel): ").strip().lower()
+            rewrite_decision = (
+                input(f"\nWould you like to rewrite? (y/n, {Command.QUIT} to cancel): ")
+                .strip()
+                .lower()
+            )
             if rewrite_decision == Command.QUIT:
                 return None
             if rewrite_decision != "y":
@@ -193,7 +201,7 @@ class CliSession:
             edited = edited.strip()
             if edited == "" or edited == body:
                 break
-            body = edited 
+            body = edited
         return body
 
     def _capture_text_input(self, input_text: str) -> str:
@@ -204,7 +212,7 @@ class CliSession:
             thought = self._speech_to_text.transcribe()
             print(f"Recorded: {thought}")
         return thought.strip()
-    
+
     def _run_thought_coach_round(self, body: str, index: Index) -> str:
         """
         Run a single Thought Coach round: generate feedback, show it,
@@ -324,16 +332,16 @@ class CliSession:
         )
         now = datetime.now(timezone.utc)
         system_context = (
-            CEREBRUM_CHAT_SYSTEM_PROMPT +
-            f"Current date (for reference): {now.isoformat()}"
+            CEREBRUM_CHAT_SYSTEM_PROMPT
+            + f"\nCurrent date (for reference): {now.isoformat()}\n"
         )
         messages = [
             {"role": "system", "content": system_context},
-            {"role": "assistant", "content": result_context},
+            {"role": "user", "content": result_context},
             {"role": "user", "content": query},
         ]
         self._ask_cerebrum_chat_loop(messages)
-    
+
     def _format_search_results_for_context(self, search_result: SearchResult) -> str:
         lines = []
         for hit in search_result.hits:
@@ -360,7 +368,7 @@ class CliSession:
                 print("\n---- END OF CHAT ----\n")
                 break
             messages.append({"role": "user", "content": user_input})
-    
+
     def _action_close_cerebrum(self):
         print("Exiting Cerebrum...")
         self._should_exit = True
