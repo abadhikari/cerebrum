@@ -1,5 +1,6 @@
 from typing import Optional
 from datetime import datetime, timezone
+from enum import StrEnum
 
 import click
 
@@ -22,8 +23,9 @@ from cerebrum.cli.views import (
     print_box_text,
 )
 
-VOICE_COMMAND = "/v"
-QUIT_COMMAND = "/q"
+class Command(StrEnum):
+    VOICE = "/v"
+    QUIT = "/q"
 
 class CliSession:
     """
@@ -74,13 +76,12 @@ class CliSession:
         print_banner()
         while True:
             if not self._selected_index:
-                self._select_index()
-
-            index = self._require_index()
-            print_box_text(
-                f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}"
-            )
-
+                index = self._select_index()
+                print_box_text(
+                    f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}"
+                )
+            
+            self._require_index()
             print_menu(self._menu_actions)
             choice = input("\nEnter choice (number): ").strip()
             entry = self._menu_actions.get(choice)
@@ -94,25 +95,26 @@ class CliSession:
             if self._should_exit:
                 break
 
-    def _select_index(self) -> None:
+    def _select_index(self) -> Index:
         indexes = self._service.get_indexes()
         if not indexes:
             print("No indexes currently exist! You will need to create one.")
             index_id = self._create_index()
-            self._select_index_with_id(index_id)
-            return
+            return self._select_index_with_id(index_id)
 
         if len(indexes) == 1:
-            self._selected_index = indexes[0]
-            return
+            index = indexes[0]
+            self._selected_index = index
+            return index
 
         indexes_map = print_indexes(indexes)
-        index_key = input("\nPlease select an index out of the above: ")
-        index = indexes_map.get(index_key)
+        while True:
+            index_key = input("\nPlease select an index out of the above: ")
+            index = indexes_map.get(index_key)
 
-        if index:
-            self._selected_index = index
-        else:
+            if index:
+                self._selected_index = index
+                return index
             print("Invalid index selected. Try again")
 
     def _create_index(self) -> str:
@@ -121,9 +123,12 @@ class CliSession:
         algorithm = input("Enter the name of the algorithm of the index: ")
         return self._service.create_index(index_name, algorithm)
 
-    def _select_index_with_id(self, index_id: str) -> None:
+    def _select_index_with_id(self, index_id: str) -> Index:
         index = self._service.get_index_by_id(index_id)
+        if index is None:
+            raise RuntimeError(f"Index not found: {index_id}")
         self._selected_index = index
+        return index
 
     def _require_index(self) -> Index:
         """
@@ -167,16 +172,16 @@ class CliSession:
         Returns:
             The final thought text after zero or more refinement steps or None.
         """
-        body = self._capture_text_input(f"Enter your thought ({QUIT_COMMAND} to cancel)")
-        if body in {QUIT_COMMAND, ""}:
+        body = self._capture_text_input(f"Enter your thought ({Command.QUIT} to cancel)")
+        if body in {Command.QUIT, ""}:
             return None
 
         max_num_loops = 3
         for _ in range(max_num_loops):
             self._run_thought_coach_round(body, index)
 
-            rewrite_decision = input(f"\nWould you like to rewrite? (y/n, {QUIT_COMMAND} to cancel): ").strip().lower()
-            if rewrite_decision == QUIT_COMMAND:
+            rewrite_decision = input(f"\nWould you like to rewrite? (y/n, {Command.QUIT} to cancel): ").strip().lower()
+            if rewrite_decision == Command.QUIT:
                 return None
             if rewrite_decision != "y":
                 break
@@ -192,10 +197,10 @@ class CliSession:
         return body
 
     def _capture_text_input(self, input_text: str) -> str:
-        command_options = f"{VOICE_COMMAND} for voice input"
+        command_options = f"{Command.VOICE} for voice input"
         thought = input(f"{input_text} [{command_options}]: ")
 
-        if thought == VOICE_COMMAND:
+        if thought == Command.VOICE:
             thought = self._speech_to_text.transcribe()
             print(f"Recorded: {thought}")
         return thought.strip()
@@ -213,8 +218,9 @@ class CliSession:
             {"role": "system", "content": THOUGHT_COACH_SYSTEM_PROMPT},
             {"role": "user", "content": user_thought},
         ]
-        print("\n==== Thought Coach Feedback ====\n")
-        feedback = self._model.call(messages)
+        print("\n==== Thought Coach Feedback ====")
+        with typewriter_spinner(["Producing feedback..."]):
+            feedback = self._model.call(messages)
         print(feedback)
         self._similar_thought_check(body, index)
 
@@ -344,13 +350,13 @@ class CliSession:
     def _ask_cerebrum_chat_loop(self, messages: list):
         print("\n---- START OF CEREBRUM CHAT ----\n")
         while True:
-            with typewriter_spinner(messages=["Thinking ..."]):
+            with typewriter_spinner(messages=["Thinking..."]):
                 response = self._model.call(messages)
             print(f"Cerebrum: {response}")
             messages.append({"role": "assistant", "content": response})
 
-            user_input = self._capture_text_input("\nYou")
-            if user_input.lower() in {QUIT_COMMAND}:
+            user_input = self._capture_text_input("\nYou").strip().lower()
+            if user_input == Command.QUIT:
                 print("\n---- END OF CHAT ----\n")
                 break
             messages.append({"role": "user", "content": user_input})

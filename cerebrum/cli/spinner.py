@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 
 @contextmanager
-def typewriter_spinner(messages: list[str]):
+def typewriter_spinner(messages: list[str], speed=0.05, pause=0.3):
     """
     Context manager that displays an animated “typewriter” spinner
     on stderr while the enclosed block executes.
@@ -56,9 +56,9 @@ def typewriter_spinner(messages: list[str]):
             symbol = next(symbols)
             stream.write(f"\r{symbol}")
             stream.flush()
-            time.sleep(0.05)
+            time.sleep(speed)
             if symbol in full_messages:
-                time.sleep(0.3)
+                time.sleep(pause)
             stream.write("\r\033[K")
             stream.flush()
 
