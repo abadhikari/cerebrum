@@ -1,5 +1,5 @@
-from cerebrum.core.speech_to_text import SpeechToText
 from cerebrum.cli.command import Command
+from cerebrum.core.speech_to_text import SpeechToText
 
 
 class InputReader:

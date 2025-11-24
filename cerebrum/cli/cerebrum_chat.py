@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
-from cerebrum.core.language_model import LanguageModel
-from cerebrum.core.search import SearchResult
-from cerebrum.cli.prompts import CEREBRUM_CHAT_SYSTEM_PROMPT
-from cerebrum.cli.spinner import typewriter_spinner
+
 from cerebrum.cli.command import Command
 from cerebrum.cli.input_reader import InputReader
+from cerebrum.cli.prompts import CEREBRUM_CHAT_SYSTEM_PROMPT
+from cerebrum.cli.spinner import typewriter_spinner
+from cerebrum.core.language_model import LanguageModel
+from cerebrum.core.search import SearchResult
 
 
 class CerebrumChat:

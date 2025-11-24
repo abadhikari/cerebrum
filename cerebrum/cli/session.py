@@ -2,24 +2,24 @@ import logging
 from typing import Optional
 
 from cerebrum.application.service import Service
-from cerebrum.core.repository import Index
-from cerebrum.core.search import SearchResult, SearchStatus
-from cerebrum.core.thought import Thought
+from cerebrum.cli.cerebrum_chat import CerebrumChat
+from cerebrum.cli.colors import (
+    error,
+    success,
+)
+from cerebrum.cli.input_reader import InputReader
+from cerebrum.cli.thought_coach import ThoughtCoach
 from cerebrum.cli.views import (
     print_banner,
+    print_box_text,
+    print_duck,
     print_indexes,
     print_menu,
     print_search_result,
-    print_box_text,
-    print_duck,
 )
-from cerebrum.cli.colors import (
-    success,
-    error,
-)
-from cerebrum.cli.input_reader import InputReader
-from cerebrum.cli.cerebrum_chat import CerebrumChat
-from cerebrum.cli.thought_coach import ThoughtCoach
+from cerebrum.core.repository import Index
+from cerebrum.core.search import SearchResult, SearchStatus
+from cerebrum.core.thought import Thought
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ class CliSession:
         if self._selected_index is None:
             index = self._select_index()
             print_box_text(
-                f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}"
+                f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}",
             )
             self._selected_index = index
             return index
@@ -113,13 +113,12 @@ class CliSession:
             return self._select_index_with_id(index_id)
 
         if len(indexes) == 1:
-            index = indexes[0]
-            return index
+            return indexes[0]
 
         indexes_map = print_indexes(indexes)
         while True:
             index_key = self._input_reader.text(
-                "\nPlease select an index out of the above"
+                "\nPlease select an index out of the above",
             )
             index = indexes_map.get(index_key)
 
@@ -131,7 +130,7 @@ class CliSession:
         print("\n==== INDEX CREATION ====\n")
         index_name = self._input_reader.text("Enter the name of the index to create")
         algorithm = self._input_reader.text(
-            "Enter the name of the algorithm of the index"
+            "Enter the name of the algorithm of the index",
         )
         return self._service.create_index(index_name, algorithm)
 
@@ -169,8 +168,19 @@ class CliSession:
         Returns:
             A list of unique, stripped tag strings.
         """
-        raw_tags = self._input_reader.text("Enter your comma separated tags").split(",")
+        while True:
+            raw_tags = self._input_reader.text("Enter your comma separated tags").split(
+                ","
+            )
+            tags = self._parse_tags(raw_tags)
+            tags_text = ", ".join(tags)
+            confirmation = self._input_reader.text(
+                f"Do these tags ({tags_text}) look good? (y/n)"
+            )
+            if confirmation.lower() == "y":
+                return tags
 
+    def _parse_tags(self, raw_tags: str) -> list[str]:
         tags = []
         seen = set()
         for raw_tag in raw_tags:
@@ -222,7 +232,7 @@ class CliSession:
         while True:
             print_duck()
             text = self._input_reader.text(
-                "Talk to duck (or say 'thanks duck' to finish)"
+                "Talk to duck (or say 'thanks duck' to finish)",
             )
             if text == "thanks duck":
                 break

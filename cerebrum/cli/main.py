@@ -9,14 +9,14 @@ import argparse
 import logging
 
 from cerebrum.application.bootstrap import build_container, init_environment
-from cerebrum.cli.session import CliSession
-from cerebrum.infra.logging.logging_config import init_logging
-from cerebrum.cli.spinner import typewriter_spinner
-from cerebrum.application.container import Container
 from cerebrum.application.config import Config
-from cerebrum.cli.input_reader import InputReader
+from cerebrum.application.container import Container
 from cerebrum.cli.cerebrum_chat import CerebrumChat
+from cerebrum.cli.input_reader import InputReader
+from cerebrum.cli.session import CliSession
+from cerebrum.cli.spinner import typewriter_spinner
 from cerebrum.cli.thought_coach import ThoughtCoach
+from cerebrum.infra.logging.logging_config import init_logging
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         with typewriter_spinner(
-            messages=["Booting Cerebrum ...", "(this might take a while)"]
+            messages=["Booting Cerebrum ...", "(this might take a while)"],
         ):
             container.start()
     except Exception:

@@ -1,14 +1,14 @@
 import click
 
-from cerebrum.core.language_model import LanguageModel
-from cerebrum.core.repository import Index
+from cerebrum.application.service import Service
+from cerebrum.cli.command import Command
+from cerebrum.cli.input_reader import InputReader
 from cerebrum.cli.prompts import (
     THOUGHT_COACH_SYSTEM_PROMPT,
 )
-from cerebrum.application.service import Service
 from cerebrum.cli.spinner import typewriter_spinner
-from cerebrum.cli.command import Command
-from cerebrum.cli.input_reader import InputReader
+from cerebrum.core.language_model import LanguageModel
+from cerebrum.core.repository import Index
 
 
 class ThoughtCoach:
@@ -21,7 +21,10 @@ class ThoughtCoach:
     """
 
     def __init__(
-        self, language_model: LanguageModel, input_reader: InputReader, service: Service
+        self,
+        language_model: LanguageModel,
+        input_reader: InputReader,
+        service: Service,
     ):
         """
         Initialize the ThoughtCoach.
@@ -65,7 +68,7 @@ class ThoughtCoach:
             self._run_thought_coach_round(body, index)
 
             rewrite_decision = self._input_reader.text(
-                f"\nWould you like to rewrite? (y/n, {Command.QUIT} to cancel)"
+                f"\nWould you like to rewrite? (y/n, {Command.QUIT} to cancel)",
             ).lower()
             if rewrite_decision == Command.QUIT:
                 return None
