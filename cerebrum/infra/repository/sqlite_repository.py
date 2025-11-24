@@ -91,10 +91,10 @@ class SqliteRepository:
             int: Parsed `id64` value.
 
         Raises:
-            ValueError: If the row is missing or malformed.
+            RuntimeError: If the row is missing or malformed.
         """
         if not row or "id64" not in row:
-            raise ValueError("Expected id64 but got no row/column")
+            raise RuntimeError("Expected id64 but got no row/column")
         return int(row["id64"])
 
     def complete_thought_insert(self, id64: int) -> None:

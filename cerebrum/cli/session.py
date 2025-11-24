@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -21,7 +22,14 @@ from cerebrum.cli.views import (
     print_menu,
     print_search_result,
     print_box_text,
+    print_duck,
 )
+from cerebrum.cli.colors import (
+    success,
+    error,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class Command(StrEnum):
@@ -63,7 +71,8 @@ class CliSession:
         self._menu_actions = {
             "1": ("Add Thought", self._action_add_thought),
             "2": ("Ask Cerebrum", self._action_ask_cerebrum),
-            "3": ("Exit Cerebrum", self._action_close_cerebrum),
+            "3": ("Talk to Duck", self._action_talk_to_duck),
+            "4": ("Exit Cerebrum", self._action_close_cerebrum),
         }
 
     def run_session(self) -> None:
@@ -83,13 +92,12 @@ class CliSession:
                     f"Selected Index: {index.index_name}, created: {index.created_at.isoformat()}"
                 )
 
-            self._require_index()
             print_menu(self._menu_actions)
             choice = input("\nEnter choice (number): ").strip()
             entry = self._menu_actions.get(choice)
 
             if entry is None:
-                print("Invalid Option.\n")
+                print(error("Invalid Option.\n"))
             else:
                 _, menu_action = entry
                 menu_action()
@@ -100,7 +108,7 @@ class CliSession:
     def _select_index(self) -> Index:
         indexes = self._service.get_indexes()
         if not indexes:
-            print("No indexes currently exist! You will need to create one.")
+            print(error("No indexes currently exist! You will need to create one."))
             index_id = self._create_index()
             return self._select_index_with_id(index_id)
 
@@ -117,7 +125,7 @@ class CliSession:
             if index:
                 self._selected_index = index
                 return index
-            print("Invalid index selected. Try again")
+            print(error("Invalid index selected. Try again"))
 
     def _create_index(self) -> str:
         print("\n==== INDEX CREATION ====\n")
@@ -136,14 +144,12 @@ class CliSession:
         """
         Return the currently selected index.
 
-        Raises:
-            RuntimeError: If no index has been selected.
-
         This enforces the invariant that all CLI actions must operate
         on a valid, user-chosen index.
         """
         if self._selected_index is None:
-            raise RuntimeError("No index selected. Call _select_index() first.")
+            print(error("No index selected. Select an index first."))
+            self._select_index()
         return self._selected_index
 
     def _action_add_thought(self) -> None:
@@ -159,7 +165,13 @@ class CliSession:
         print()
         thought = Thought(body, tags)
 
-        self._service.add_thought(thought, index.index_id)
+        try:
+            self._service.add_thought(thought, index.index_id)
+            print(success("\nThought saved.\n"))
+        except Exception:
+            error_msg = "Failed to save thought"
+            logger.exception(error_msg)
+            print(error(f"\n{error_msg}\n"))
 
     def _thought_coach_loop(self, index: Index) -> str | None:
         """
@@ -281,7 +293,7 @@ class CliSession:
 
         error_msg = self._validate_search_result(search_result)
         if error_msg:
-            print(f"\n{error_msg}")
+            print(error(f"\n{error_msg}"))
             return
 
         print_search_result(search_result)
@@ -318,7 +330,7 @@ class CliSession:
 
         error_msg = self._validate_search_result(search_result)
         if error_msg:
-            print(f"\n{error_msg}")
+            print(error(f"\n{error_msg}"))
             return
 
         if see_semantic_results.strip().lower() == "y":
@@ -368,6 +380,21 @@ class CliSession:
                 print("\n---- END OF CHAT ----\n")
                 break
             messages.append({"role": "user", "content": user_input})
+
+    def _action_talk_to_duck(self) -> None:
+        print("\n==== TALK TO DUCK ====\n")
+        total_text = ""
+        while True:
+            print_duck()
+            text = self._capture_text_input(
+                "Talk to duck (or say 'thanks duck' to finish)"
+            )
+            if text == "thanks duck":
+                break
+            total_text += f"{text}\n"
+        print("\n---- Session ----\n")
+        print(total_text)
+        print("-----------------")
 
     def _action_close_cerebrum(self):
         print("Exiting Cerebrum...")

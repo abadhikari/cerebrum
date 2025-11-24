@@ -20,9 +20,18 @@ _________                     ___.
 
 """
 
+DUCK_ASCII = r"""
+.__(.)< (MEOW)
+ \___)   
+"""
+
 
 def print_banner() -> None:
     print(CEREBRUM_ASCII)
+
+
+def print_duck() -> None:
+    print(DUCK_ASCII)
 
 
 def print_indexes(indexes: list[Index]) -> dict[str, Index]:
