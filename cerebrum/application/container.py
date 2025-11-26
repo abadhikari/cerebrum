@@ -4,10 +4,14 @@ from cerebrum.application.config import Config
 from cerebrum.application.service import Service
 from cerebrum.core.language_model import LanguageModel
 from cerebrum.core.speech_to_text import SpeechToText
-from cerebrum.infra.db import SqliteClient, SqliteSchemaManager, SqliteSqlProducer
+from cerebrum.infra.db import (
+    SqliteClient,
+    SqliteRepository,
+    SqliteSchemaManager,
+    SqliteSqlProducer,
+)
 from cerebrum.infra.embedder import SentenceTransformerEmbedder
 from cerebrum.infra.language_model import OllamaModel
-from cerebrum.infra.repository import SqliteRepository
 from cerebrum.infra.resolver import SimpleResolver
 from cerebrum.infra.semantic_store import FaissClient
 from cerebrum.infra.speech_to_text import WhisperSpeechToText

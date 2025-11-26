@@ -6,7 +6,7 @@ from cerebrum.core.embedder import EmbeddingRecord
 from cerebrum.core.repository import Index, ThoughtRecord, ThoughtStatus
 from cerebrum.core.semantic_store import Ids
 from cerebrum.core.thought import Thought
-from cerebrum.infra.db.sql.sql_client import Row, SqlClient
+from cerebrum.infra.db.sql.sql_client import Row, Rows, SqlClient
 from cerebrum.infra.db.sql.sqlite_sql_producer import SqliteSqlProducer
 
 
@@ -73,12 +73,39 @@ class SqliteRepository:
             )
             self._sql_client.execute(sql, params)
 
+            self._insert_tags(embedding_id, thought.tags)
+
             sql, params = self._sql_producer.insert_index_embedding_row(
                 index_id,
                 embedding_id,
             )
             row = self._sql_client.query_one(sql, params)
             return self._read_id64(row)
+
+    def _insert_tags(self, embedding_id: str, tag_names: list[str]) -> None:
+        tag_names = self._canonicalize_tag_names(tag_names)
+        if not tag_names:
+            return
+
+        sql, params = self._sql_producer.insert_tags_rows(tag_names)
+        self._sql_client.execute_many(sql, params)
+
+        sql, params = self._sql_producer.select_tag_ids(tag_names)
+        rows = self._sql_client.query(sql, params)
+        tag_ids = self._read_tag_ids(rows)
+
+        sql, params = self._sql_producer.insert_embedding_tags_rows(
+            tag_ids,
+            embedding_id,
+        )
+        self._sql_client.execute_many(sql, params)
+
+    def _canonicalize_tag_names(self, tag_names: list[str]) -> list[str]:
+        tags = {tag.strip().lower() for tag in tag_names if tag and tag.strip()}
+        return sorted(tags)
+
+    def _read_tag_ids(self, rows: Rows) -> list[int]:
+        return [int(row["tag_id"]) for row in rows]
 
     def _read_id64(self, row: Row):
         """
@@ -179,7 +206,7 @@ class SqliteRepository:
         Returns:
             ThoughtRecord: Hydrated thought record object.
         """
-        tags = tuple(json.loads(row["tags"]))
+        tags = tuple(json.loads(row["tags_json"]))
         created_at = self._timestamp_to_utc_datetime(row["created_at"])
         return ThoughtRecord(
             tags=tags,

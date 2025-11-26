@@ -96,6 +96,32 @@ class SqliteClient(BaseClient):
         cur = self.connection.execute(sql, params or {})
         return cur.rowcount
 
+    def execute_many(self, sql: str, params: list[SqlParams]) -> int:
+        """
+        Execute the same non-SELECT SQL statement multiple times with different
+        parameter sets.
+
+        This is a convenience wrapper around SQLite's `executemany()`. It is intended
+        for bulk INSERT/UPDATE operations that do not return rows.
+
+        Args:
+            sql: SQL statement with named placeholders (e.g., `UPDATE ... WHERE id = :id`).
+            params: A list of mappings, where each mapping provides the placeholder
+                    values for one execution of the statement. Use `bytes` for BLOBs.
+
+        Returns:
+            int: Number of affected rows. SQLite may return -1 for statements where
+                 the count is undefined.
+
+        Raises:
+            sqlite3.Error: If execution fails.
+        """
+        param_keys = list(params[0].keys()) if params else []
+        logger.debug("EXECUTE MANY: %s | param_keys=%s", sql, param_keys)
+
+        cur = self.connection.executemany(sql, params or {})
+        return cur.rowcount
+
     def query(self, sql: str, params: SqlParams | None = None) -> Rows:
         """
         Execute a SELECT statement and return all results as a list of dicts.

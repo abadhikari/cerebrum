@@ -8,6 +8,9 @@ from cerebrum.infra.db.sql.sql_client import SqlParams
 # Type alias representing a single SQL statement and its named parameters.
 SqlStatement = tuple[str, SqlParams]
 
+# Type alias representing one SQL statement + many parameter dicts
+SqlBatchStatement = tuple[str, list[SqlParams]]
+
 
 class SqliteSqlProducer:
     """Factory for generating parameterized Sqlite SQL statements used by the repository layer.
@@ -37,9 +40,9 @@ class SqliteSqlProducer:
             SqlStatement: Tuple of SQL string and parameter dict.
         """
         sql = """
-      INSERT INTO embeddings (embedding_id, body, tags, model_name, embedding)
-      VALUES (:embedding_id, :body, :tags, :model_name, :embedding);
-    """
+            INSERT INTO embeddings (embedding_id, body, tags, model_name, embedding)
+            VALUES (:embedding_id, :body, :tags, :model_name, :embedding);
+        """
         params = {
             "embedding_id": embedding_id,
             "body": thought.body,
@@ -66,9 +69,9 @@ class SqliteSqlProducer:
             SqlStatement: Tuple of SQL string and parameter dict.
         """
         sql = """
-      INSERT INTO indexes (index_id, index_name, algorithm)
-      VALUES (:index_id, :index_name, :algorithm);
-    """
+            INSERT INTO indexes (index_id, index_name, algorithm)
+            VALUES (:index_id, :index_name, :algorithm);
+        """
         params = {
             "index_id": index_id,
             "index_name": index_name,
@@ -92,14 +95,94 @@ class SqliteSqlProducer:
             SqlStatement: Tuple of SQL string and parameter dict.
         """
         sql = """
-      INSERT INTO index_embeddings (index_id, embedding_id)
-      VALUES (:index_id, :embedding_id)
-      RETURNING id64;
-    """
+            INSERT INTO index_embeddings (index_id, embedding_id)
+            VALUES (:index_id, :embedding_id)
+            RETURNING id64;
+        """
         params = {
             "index_id": index_id,
             "embedding_id": embedding_id,
         }
+        return (sql, params)
+
+    def insert_embedding_tags_rows(
+        self,
+        tag_ids: list[int],
+        embedding_id: str,
+    ) -> SqlBatchStatement:
+        """
+        Create a batch INSERT statement linking an embedding to multiple tags.
+
+        Args:
+            tag_ids: List of tag IDs to associate with the embedding.
+            embedding_id: UUID of the embedding being tagged.
+
+        Returns:
+            SqlBatchStatement: Tuple of SQL string and list of parameter dicts.
+        """
+        sql = """
+            INSERT OR IGNORE INTO embedding_tags (tag_id, embedding_id)
+            VALUES (:tag_id, :embedding_id)
+        """
+        params = [
+            {
+                "tag_id": tag_id,
+                "embedding_id": embedding_id,
+            }
+            for tag_id in tag_ids
+        ]
+        return (sql, params)
+
+    def insert_tags_rows(
+        self,
+        tag_names: list[str],
+    ) -> SqlBatchStatement:
+        """
+        Create a batch INSERT statement for multiple tags.
+
+        Args:
+            tag_names: List of tag names.
+
+        Returns:
+            SqlBatchStatement: Tuple of SQL string and list of parameter dicts.
+        """
+        sql = """
+            INSERT OR IGNORE INTO tags (name)
+            VALUES (:tag_name)
+        """
+        params = [
+            {
+                "tag_name": tag_name,
+            }
+            for tag_name in tag_names
+        ]
+        return (sql, params)
+
+    def select_tag_ids(self, tag_names: list[str]) -> SqlStatement:
+        """
+        Build a SELECT query to retrieve tag_ids for the given tag names.
+
+        Args:
+            tag_names: List of tag names to look up.
+
+        Returns:
+            SqlStatement: Tuple of SQL string and parameter dict.
+
+        Raises:
+            ValueError: If tag_names is empty.
+        """
+        if not tag_names:
+            raise ValueError("tag_names must be non-empty.")
+
+        n = len(tag_names)
+        placeholders = ", ".join(f":name{i}" for i in range(n))
+
+        sql = f"""
+            SELECT tag_id
+            FROM tags
+            WHERE name IN ({placeholders})
+        """
+        params = {f"name{i}": tag_names[i].strip().lower() for i in range(n)}
         return (sql, params)
 
     def select_ids(self, ids: Ids, index_id: str, status: str) -> SqlStatement:
@@ -123,13 +206,17 @@ class SqliteSqlProducer:
         values = ", ".join(f":id{i}" for i in range(n))
 
         sql = f"""
-      SELECT e.embedding_id, ie.id64, e.body, e.tags, e.status, e.created_at
-      FROM index_embeddings ie
-      JOIN embeddings e ON e.embedding_id = ie.embedding_id
-      WHERE e.status = :status
-        AND ie.index_id = :index_id
-        AND ie.id64 IN ({values})
-    """
+            SELECT e.embedding_id, ie.id64, e.body, e.status, e.created_at, COALESCE(json_group_array(t.name), json('[]')) AS tags_json
+            FROM index_embeddings ie
+            JOIN embeddings e ON e.embedding_id = ie.embedding_id
+            LEFT JOIN embedding_tags et ON et.embedding_id = e.embedding_id
+            LEFT JOIN tags t ON t.tag_id = et.tag_id
+            WHERE e.status = :status
+                AND ie.index_id = :index_id
+                AND ie.id64 IN ({values})
+            GROUP BY e.embedding_id, ie.id64, e.body, e.status, e.created_at
+            ORDER BY ie.id64
+        """
         params = {
             "index_id": index_id,
             "status": status,
@@ -144,10 +231,10 @@ class SqliteSqlProducer:
             SqlStatement: Tuple of SQL string and empty parameter dict.
         """
         sql = """
-      SELECT index_id, index_name, algorithm, created_at
-      FROM indexes
-      ORDER BY created_at DESC;
-    """
+            SELECT index_id, index_name, algorithm, created_at
+            FROM indexes
+            ORDER BY created_at DESC;
+        """
         return (sql, {})
 
     def update_index_embeddings_status(self, id64: int) -> SqlStatement:
@@ -165,10 +252,10 @@ class SqliteSqlProducer:
             its associated named parameters.
         """
         sql = """
-      UPDATE index_embeddings
-      SET status = 'complete'
-      WHERE id64 = :id64;
-    """
+            UPDATE index_embeddings
+            SET status = 'complete'
+            WHERE id64 = :id64;
+        """
         params = {
             "id64": id64,
         }
@@ -184,41 +271,60 @@ class SqliteSqlProducer:
             list[SqlStatement]: List of SQL statements to initialize the schema.
         """
         create_embeddings_table_sql = """
-      CREATE TABLE IF NOT EXISTS embeddings (
-        embedding_id TEXT PRIMARY KEY,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        body TEXT NOT NULL,
-        tags TEXT NOT NULL,
-        model_name TEXT NOT NULL,
-        status TEXT CHECK(status IN ('active', 'archived')) DEFAULT 'active',
-        embedding BLOB NOT NULL
-      );
-    """
+            CREATE TABLE IF NOT EXISTS embeddings (
+                embedding_id TEXT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                body TEXT NOT NULL,
+                tags TEXT NOT NULL,
+                model_name TEXT NOT NULL,
+                status TEXT CHECK(status IN ('active', 'archived')) DEFAULT 'active',
+                embedding BLOB NOT NULL
+            );
+        """
+
+        create_tags_table_sql = """
+            CREATE TABLE IF NOT EXISTS tags (
+                tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            );
+        """
+
+        create_embedding_tags_table_sql = """
+            CREATE TABLE IF NOT EXISTS embedding_tags (
+                tag_id INTEGER NOT NULL,
+                embedding_id TEXT NOT NULL,
+                PRIMARY KEY (embedding_id, tag_id),
+                FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE,
+                FOREIGN KEY (embedding_id) REFERENCES embeddings(embedding_id) ON DELETE CASCADE
+            );
+        """
 
         create_indexes_table_sql = """
-      CREATE TABLE IF NOT EXISTS indexes (
-        index_id TEXT PRIMARY KEY,
-        index_name TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        algorithm TEXT NOT NULL,
-        UNIQUE (index_name)
-      );
-    """
+            CREATE TABLE IF NOT EXISTS indexes (
+                index_id TEXT PRIMARY KEY,
+                index_name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                algorithm TEXT NOT NULL,
+                UNIQUE (index_name)
+            );
+        """
 
         create_index_embeddings_table_sql = """
-      CREATE TABLE IF NOT EXISTS index_embeddings (
-        id64 INTEGER PRIMARY KEY AUTOINCREMENT,
-        index_id TEXT NOT NULL,
-        embedding_id TEXT NOT NULL,
-        status TEXT CHECK(status IN ('pending', 'complete')) DEFAULT 'pending',
-        UNIQUE (index_id, embedding_id),
-        FOREIGN KEY (index_id) REFERENCES indexes(index_id) ON DELETE CASCADE,
-        FOREIGN KEY (embedding_id) REFERENCES embeddings(embedding_id) ON DELETE CASCADE
-      );
-    """
+            CREATE TABLE IF NOT EXISTS index_embeddings (
+                id64 INTEGER PRIMARY KEY AUTOINCREMENT,
+                index_id TEXT NOT NULL,
+                embedding_id TEXT NOT NULL,
+                status TEXT CHECK(status IN ('pending', 'complete')) DEFAULT 'pending',
+                UNIQUE (index_id, embedding_id),
+                FOREIGN KEY (index_id) REFERENCES indexes(index_id) ON DELETE CASCADE,
+                FOREIGN KEY (embedding_id) REFERENCES embeddings(embedding_id) ON DELETE CASCADE
+            );
+        """
 
         create_table_commands = [
             create_embeddings_table_sql,
+            create_tags_table_sql,
+            create_embedding_tags_table_sql,
             create_indexes_table_sql,
             create_index_embeddings_table_sql,
         ]

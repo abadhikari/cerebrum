@@ -19,6 +19,7 @@ dev = ["ruff", "black"]
 
 [project.scripts]
 cerebrum-cli = "cerebrum.cli.main:main"
+cerebrum-maintenance = "cerebrum.maintenance.main:main"
 
 [build-system]
 requires = ["setuptools", "wheel"]

@@ -33,6 +33,25 @@ class SqlClient(Protocol):
         """
         ...
 
+    def execute_many(self, sql: str, params: list[SqlParams]) -> int:
+        """
+        Execute a non-SELECT statement multiple times with different parameter sets.
+
+        Args:
+            sql: The SQL statement with named placeholders (e.g., `... VALUES (:a, :b)`).
+            params: A list of mappings, where each mapping provides the placeholder
+                    values for one execution of the statement. Use `bytes` for BLOBs.
+
+        Returns:
+            int: Number of affected rows reported for the *last* execution. SQLite may
+                return -1 for statements where the `rowcount` is undefined. This
+                value should be treated as informational only.
+
+        Raises:
+            Any driver-specific exception if execution fails (propagate; do not swallow).
+        """
+        ...
+
     def query(self, sql: str, params: SqlParams | None = None) -> Rows:
         """
         Execute a SELECT and return all rows as a list of dicts.

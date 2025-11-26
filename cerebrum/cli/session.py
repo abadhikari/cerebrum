@@ -170,12 +170,12 @@ class CliSession:
         """
         while True:
             raw_tags = self._input_reader.text("Enter your comma separated tags").split(
-                ","
+                ",",
             )
             tags = self._parse_tags(raw_tags)
             tags_text = ", ".join(tags)
             confirmation = self._input_reader.text(
-                f"Do these tags ({tags_text}) look good? (y/n)"
+                f"Do these tags ({tags_text}) look good? (y/n)",
             )
             if confirmation.lower() == "y":
                 return tags
