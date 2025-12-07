@@ -220,7 +220,7 @@ class SqliteRepository:
     def retrieve_random_thoughts(
         self,
         index_id: str,
-        limit: int
+        limit: int,
     ) -> list[ThoughtRecord]:
         """
         Fetch a random batch of active thoughts for the given index.

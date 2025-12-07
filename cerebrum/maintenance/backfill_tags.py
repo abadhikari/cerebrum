@@ -74,19 +74,19 @@ def backup_sqlite_file(db_filepath: Path) -> None:
 
 
 def backfill_tags(config: Config):
-	"""
+    """
     High-level wrapper that backs up the DB, runs the tags backfill,
     and reports success or failure.
 
     This is the entrypoint invoked by the maintenance CLI.
     """
-	db_filepath = config.db_filepath
-	backup_sqlite_file(db_filepath)
+    db_filepath = config.db_filepath
+    backup_sqlite_file(db_filepath)
 
-	try:
-		with build_sql_client(db_filepath) as sql_client:
-			run_backfill_tags(sql_client, SqliteSqlProducer())
-		print("Backfill successful")
-	except Exception as e:
-		print("Backfill failed:", e)
-		raise
+    try:
+        with build_sql_client(db_filepath) as sql_client:
+            run_backfill_tags(sql_client, SqliteSqlProducer())
+        print("Backfill successful")
+    except Exception as e:
+        print("Backfill failed:", e)
+        raise

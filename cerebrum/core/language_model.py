@@ -23,6 +23,7 @@ class CallOptions:
 
     Backends are free to ignore unsupported fields.
     """
+
     format: Any = None
 
 
@@ -34,7 +35,11 @@ class LanguageModel(Protocol):
     and return the generated text response as a string.
     """
 
-    def call(self, messages: list[ChatMessage], options: CallOptions | None = None) -> str:
+    def call(
+        self,
+        messages: list[ChatMessage],
+        options: CallOptions | None = None,
+    ) -> str:
         """
         Generate a text response given a list of chat messages.
 

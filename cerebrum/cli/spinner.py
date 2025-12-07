@@ -51,7 +51,6 @@ def typewriter_spinner(messages: list[str], speed=0.05, pause=0.3):
         symbols = itertools.cycle(prefixes)
         stream = sys.stderr
 
-        print()
         while not stop_event.is_set():
             symbol = next(symbols)
             stream.write(f"\r{symbol}")

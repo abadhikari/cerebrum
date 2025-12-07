@@ -28,6 +28,7 @@ class ThoughtStatus(StrEnum):
 @dataclass(frozen=True, slots=True)
 class ThoughtRecord:
     """Persisted thought and its storage/indexing metadata."""
+
     embedding_id: str
     id64: int
     body: str
@@ -115,7 +116,7 @@ class ThoughtRepository(Protocol):
     def retrieve_random_thoughts(
         self,
         index_id: str,
-        limit: int
+        limit: int,
     ) -> list[ThoughtRecord]:
         """
         Fetch a random batch of active thoughts for the given index.

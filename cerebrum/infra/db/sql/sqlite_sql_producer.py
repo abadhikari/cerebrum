@@ -260,7 +260,7 @@ class SqliteSqlProducer:
             "id64": id64,
         }
         return (sql, params)
-    
+
     def select_random_thoughts(self, index_id: str, limit: int) -> SqlStatement:
         """
         Select a random batch of active thoughts for drill/review mode.
@@ -281,17 +281,14 @@ class SqliteSqlProducer:
             JOIN embeddings e ON e.embedding_id = ie.embedding_id
             LEFT JOIN embedding_tags et ON et.embedding_id = e.embedding_id
             LEFT JOIN tags t ON t.tag_id = et.tag_id
-            WHERE 
+            WHERE
                 ie.index_id = :index_id
                 AND e.status = 'active'
             GROUP BY ie.id64, e.embedding_id, e.body, e.status, e.created_at
             ORDER BY RANDOM()
             LIMIT :limit
         """
-        params = {
-            "index_id": index_id,
-            "limit": limit
-        }
+        params = {"index_id": index_id, "limit": limit}
         return (sql, params)
 
     def create_tables(self) -> list[SqlStatement]:

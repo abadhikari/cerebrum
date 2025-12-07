@@ -9,6 +9,7 @@ from cerebrum.cli.colors import (
 )
 from cerebrum.cli.input_reader import InputReader
 from cerebrum.cli.thought_coach import ThoughtCoach
+from cerebrum.cli.thought_review import ThoughtReview
 from cerebrum.cli.views import (
     print_banner,
     print_box_text,
@@ -41,6 +42,7 @@ class CliSession:
         input_reader: InputReader,
         cerebrum_chat: CerebrumChat,
         thought_coach: ThoughtCoach,
+        thought_review: ThoughtReview,
     ):
         """
         Initialize a new CLI session.
@@ -52,6 +54,7 @@ class CliSession:
         self._input_reader = input_reader
         self._cerebrum_chat = cerebrum_chat
         self._thought_coach = thought_coach
+        self._thought_review = thought_review
 
         self._selected_index: Optional[Index] = None
         self._should_exit = False
@@ -60,7 +63,8 @@ class CliSession:
             "1": ("Add Thought", self._action_add_thought),
             "2": ("Ask Cerebrum", self._action_ask_cerebrum),
             "3": ("Talk to Duck", self._action_talk_to_duck),
-            "4": ("Exit Cerebrum", self._action_close_cerebrum),
+            "4": ("Random Review", self._action_random_review),
+            "5": ("Exit Cerebrum", self._action_close_cerebrum),
         }
 
     def run_session(self) -> None:
@@ -208,7 +212,7 @@ class CliSession:
         """
         print("\n==== ASK CEREBRUM ====\n")
         query = self._input_reader.text("Enter your query")
-        k = self._input_reader.integer("Enter your k value")
+        k = self._input_reader.integer("Enter your k value (default 10)")
         see_semantic_results = self._input_reader.text(
             "Would you like to see the semantic results? (y/n)",
         )
@@ -227,12 +231,13 @@ class CliSession:
         self._cerebrum_chat.run(query, search_result)
 
     def _action_talk_to_duck(self) -> None:
-        print("\n==== TALK TO DUCK ====\n")
+        print("\n==== TALK TO DUCK ====")
         total_text = ""
         while True:
             print_duck()
             text = self._input_reader.text(
                 "Talk to duck (or say 'thanks duck' to finish)",
+                allow_voice=True,
             )
             if text == "thanks duck":
                 break
@@ -240,6 +245,11 @@ class CliSession:
         print("\n---- Session ----\n")
         print(total_text)
         print("-----------------")
+
+    def _action_random_review(self) -> None:
+        print("\n==== RANDOM REVIEW ====")
+        index = self._require_index()
+        self._thought_review.run_random_review(index.index_id, 3)
 
     def _action_close_cerebrum(self) -> None:
         print("Exiting Cerebrum...")

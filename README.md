@@ -52,5 +52,5 @@ pip install -e ".[dev]"
 Then use Ruff to lint and auto-fix, and Black to format:
 
 ```bash
-ruff check . --fix && black .
+black . && ruff check . --fix
 ```

@@ -29,7 +29,11 @@ class OllamaModel:
         self._model = model
         self._temperature = temperature
 
-    def call(self, messages: list[ChatMessage], options: CallOptions | None = None) -> str:
+    def call(
+        self,
+        messages: list[ChatMessage],
+        options: CallOptions | None = None,
+    ) -> str:
         """
         Generate a response using the Ollama model.
 

@@ -16,6 +16,7 @@ from cerebrum.cli.input_reader import InputReader
 from cerebrum.cli.session import CliSession
 from cerebrum.cli.spinner import typewriter_spinner
 from cerebrum.cli.thought_coach import ThoughtCoach
+from cerebrum.cli.thought_review import ThoughtReview
 from cerebrum.infra.logging.logging_config import init_logging
 
 logger = logging.getLogger(__name__)
@@ -34,11 +35,13 @@ def _build_cli_session(container: Container):
     input_reader = InputReader(container.speech_to_text)
     cerebrum_chat = CerebrumChat(language_model, input_reader)
     thought_coach = ThoughtCoach(language_model, input_reader, container.service)
+    thought_recall = ThoughtReview(language_model, input_reader, container.service)
     return CliSession(
         container.service,
         input_reader,
         cerebrum_chat,
         thought_coach,
+        thought_recall,
     )
 
 

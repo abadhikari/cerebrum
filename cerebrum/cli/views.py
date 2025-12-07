@@ -7,7 +7,7 @@ functions contain no business logic — they only handle text formatting
 and printing to the console.
 """
 
-from cerebrum.core.repository import Index
+from cerebrum.core.repository import Index, ThoughtRecord
 from cerebrum.core.search import SearchResult
 
 CEREBRUM_ASCII = r"""
@@ -37,7 +37,8 @@ def print_duck() -> None:
 
 def print_indexes(indexes: list[Index]) -> dict[str, Index]:
     indexes_map = {}
-    print("\n=== Indexes List ===\n")
+    print()
+    print("=== Indexes List ===")
     for i, index in enumerate(indexes):
         print(f"{i + 1}. {index}")
         indexes_map[str(i + 1)] = index
@@ -52,16 +53,49 @@ def print_box_text(text: str) -> None:
 
 
 def print_menu(menu_actions: dict[str, tuple[str, object]]) -> None:
-    print("\n=== MENU ===")
+    print()
+    print("=== MENU ===")
     for key, (label, _) in menu_actions.items():
         print(f"[{key}] {label}")
 
 
 def print_search_result(search_result: SearchResult) -> None:
-    print("\n===== Results =====\n")
-    for hit in search_result.hits:
-        print(
-            f"thought: {hit.record.body}\n"
-            f"tags: {hit.record.tags}\n"
-            f"score: {hit.score:.3f}\n",
-        )
+    print()
+    print("===== Results =====")
+
+    hits = search_result.hits
+    if not hits:
+        print("(no results)")
+        return
+
+    for hit in hits:
+        tags = ", ".join(hit.record.tags)
+
+        print()
+        print(f"thought: {hit.record.body}")
+        print(f"tags: {tags}")
+        print(f"score: {hit.score:.3f}")
+
+
+def print_thought_records(thought_records: list[ThoughtRecord]) -> None:
+    print()
+    print("===== Thoughts =====")
+
+    if not thought_records:
+        print("(no records)")
+        return
+
+    for record in thought_records:
+        print()
+        print(f"thought: {record.body}")
+        print(f"tags: {record.tags}")
+
+
+def print_section(section_name: str, body: str) -> None:
+    header = f"---- {section_name} ----"
+    bar = len(header) * "-"
+
+    print()
+    print(header)
+    print(body)
+    print(bar)

@@ -7,6 +7,7 @@ from cerebrum.cli.prompts import (
     THOUGHT_COACH_SYSTEM_PROMPT,
 )
 from cerebrum.cli.spinner import typewriter_spinner
+from cerebrum.cli.views import print_section
 from cerebrum.core.language_model import LanguageModel
 from cerebrum.core.repository import Index
 
@@ -77,12 +78,15 @@ class ThoughtCoach:
 
             edited = click.edit(text=body, require_save=True)
             if edited is None:
-                return None
+                print("No changes saved; keeping previous version.")
+                break
 
             edited = edited.strip()
             if edited == "" or edited == body:
                 break
             body = edited
+
+        print_section("Final draft", body)
         return body
 
     def _run_thought_coach_round(self, body: str, index: Index) -> str:
@@ -104,9 +108,7 @@ class ThoughtCoach:
         print(feedback)
         self._similar_thought_check(body, index)
 
-        print("\n---- Current Draft ----\n")
-        print(body)
-        print("-----------------------")
+        print_section("Current Draft", body)
         return feedback
 
     def _similar_thought_check(self, body: str, index: Index) -> None:

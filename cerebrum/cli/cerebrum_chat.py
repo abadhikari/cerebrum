@@ -67,7 +67,7 @@ class CerebrumChat:
         while True:
             with typewriter_spinner(messages=["Thinking..."]):
                 response = self._model.call(messages)
-            print(f"Cerebrum: {response}")
+            print(f"\nCerebrum: {response}")
             messages.append({"role": "assistant", "content": response})
 
             user_input = self._input_reader.text("\nYou", allow_voice=True)

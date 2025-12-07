@@ -186,7 +186,7 @@ class Service:
                 return index
 
         raise KeyError(f"No index found with id: {index_id}")
-    
+
     def get_random_thoughts(self, index_id: str, limit: int) -> list[ThoughtRecord]:
         """
         Return a random batch of active thoughts for the given index.
