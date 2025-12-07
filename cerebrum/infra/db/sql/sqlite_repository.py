@@ -216,3 +216,22 @@ class SqliteRepository:
             status=ThoughtStatus(row["status"]),
             created_at=created_at,
         )
+
+    def retrieve_random_thoughts(
+        self,
+        index_id: str,
+        limit: int
+    ) -> list[ThoughtRecord]:
+        """
+        Fetch a random batch of active thoughts for the given index.
+
+        Args:
+            index_id (str): Index identifier.
+            limit: Number of thoughts to return.
+
+        Returns:
+            list[ThoughtRecord]: Retrieved thought records.
+        """
+        sql, params = self._sql_producer.select_random_thoughts(index_id, limit)
+        rows = self._sql_client.query(sql, params)
+        return [self._hydrate_thought_record(row) for row in rows]

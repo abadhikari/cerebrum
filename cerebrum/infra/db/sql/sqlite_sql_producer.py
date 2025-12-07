@@ -260,6 +260,39 @@ class SqliteSqlProducer:
             "id64": id64,
         }
         return (sql, params)
+    
+    def select_random_thoughts(self, index_id: str, limit: int) -> SqlStatement:
+        """
+        Select a random batch of active thoughts for drill/review mode.
+
+        Args:
+            index_id (str): ID of the semantic map index being queried.
+            limit: Number of thoughts to return.
+
+        Returns:
+            SqlStatement: Tuple of SQL string and parameter dict.
+        """
+        if limit <= 0:
+            raise ValueError("limit must be > 0")
+
+        sql = """
+            SELECT ie.id64, e.embedding_id, e.body, e.status, e.created_at, COALESCE(json_group_array(t.name), json('[]')) AS tags_json
+            FROM index_embeddings ie
+            JOIN embeddings e ON e.embedding_id = ie.embedding_id
+            LEFT JOIN embedding_tags et ON et.embedding_id = e.embedding_id
+            LEFT JOIN tags t ON t.tag_id = et.tag_id
+            WHERE 
+                ie.index_id = :index_id
+                AND e.status = 'active'
+            GROUP BY ie.id64, e.embedding_id, e.body, e.status, e.created_at
+            ORDER BY RANDOM()
+            LIMIT :limit
+        """
+        params = {
+            "index_id": index_id,
+            "limit": limit
+        }
+        return (sql, params)
 
     def create_tables(self) -> list[SqlStatement]:
         """Return the SQL statements required to create the database schema.

@@ -186,3 +186,21 @@ class Service:
                 return index
 
         raise KeyError(f"No index found with id: {index_id}")
+    
+    def get_random_thoughts(self, index_id: str, limit: int) -> list[ThoughtRecord]:
+        """
+        Return a random batch of active thoughts for the given index.
+
+        Args:
+            index_id: Index identifier to drill within.
+            limit: Maximum number of thoughts to return.
+
+        Returns:
+            list[ThoughtRecord]: Randomly selected thought records.
+        """
+        logger.info(
+            "RandomThoughts: index=%s limit=%d",
+            index_id,
+            limit,
+        )
+        return self._thought_repository.retrieve_random_thoughts(index_id, limit)
