@@ -1,4 +1,5 @@
-from typing import Protocol, TypedDict
+from dataclasses import dataclass
+from typing import Any, Protocol, TypedDict
 
 
 class ChatMessage(TypedDict):
@@ -15,6 +16,16 @@ class ChatMessage(TypedDict):
     content: str
 
 
+@dataclass(slots=True)
+class CallOptions:
+    """
+    Generic options for a language model call.
+
+    Backends are free to ignore unsupported fields.
+    """
+    format: Any = None
+
+
 class LanguageModel(Protocol):
     """
     Interface defining the contract for a language model.
@@ -23,13 +34,14 @@ class LanguageModel(Protocol):
     and return the generated text response as a string.
     """
 
-    def call(self, messages: list[ChatMessage]) -> str:
+    def call(self, messages: list[ChatMessage], options: CallOptions | None = None) -> str:
         """
         Generate a text response given a list of chat messages.
 
         Args:
             messages (list[ChatMessage]): The conversation history,
                 ordered chronologically.
+            options (CallOptions | None): Optional model call configuration.
 
         Returns:
             str: The generated model response.

@@ -1,6 +1,6 @@
 import ollama
 
-from cerebrum.core.language_model import ChatMessage
+from cerebrum.core.language_model import CallOptions, ChatMessage
 
 MESSAGE_KEY = "message"
 CONTENT_KEY = "content"
@@ -29,7 +29,7 @@ class OllamaModel:
         self._model = model
         self._temperature = temperature
 
-    def call(self, messages: list[ChatMessage]) -> str:
+    def call(self, messages: list[ChatMessage], options: CallOptions | None = None) -> str:
         """
         Generate a response using the Ollama model.
 
@@ -44,9 +44,12 @@ class OllamaModel:
             KeyError: If the Ollama API response structure changes or expected
                 keys ('message', 'content') are missing.
         """
+        opts = options if options else CallOptions()
         response = ollama.chat(
             model=self._model,
             messages=messages,
+            format=opts.format,
+            stream=False,
             options={TEMPERATURE_KEY: self._temperature},
         )
         return response[MESSAGE_KEY][CONTENT_KEY]
