@@ -37,18 +37,38 @@ class WhisperSpeechToText:
         Record audio until interrupted and return the transcribed text.
 
         This method captures audio from the microphone until the user
-        presses ENTER, processes the buffered audio through faster-whisper,
-        and returns the resulting transcript.
+        either presses ENTER or interrupts with Ctrl+C, processes the
+        buffered audio through faster-whisper, and returns the transcript.
 
         Returns:
-            str: The recognized speech content.
+            str: The recognized speech content (empty string if nothing usable
+                 was captured).
         """
-        print("Recording... Press ENTER to stop.")
+        audio_data = self._record_audio() 
+        if audio_data is None:
+            logger.warning("No audio captured; returning empty transcript.")
+            return ""
+        return self._transcribe_audio(audio_data)
+    
+    def _record_audio(self) -> np.ndarray | None:
+        """
+        Record audio until the user stops.
 
-        # Capture audio into memory (NumPy array)
-        recording = []
+        Blocks until ENTER (or Ctrl+C) and returns the concatenated
+        audio buffer.
+
+        Returns:
+            np.ndarray | None: PCM audio data, or None if nothing
+            was recorded.
+        """
+        print("Recording... Press ENTER to stop (Ctrl+C to abort).")
+
+        # Capture audio into memory
+        recording: list[np.ndarray] = []
 
         def callback(indata, frames, time_info, status):
+            if status:
+                logger.warning("InputStream status: %s", status)
             recording.append(indata.copy())
 
         stream = sd.InputStream(
@@ -57,18 +77,38 @@ class WhisperSpeechToText:
             dtype="int16",
             callback=callback,
         )
-        stream.start()
 
-        # User hits ENTER to stop
-        input()
-
-        stream.stop()
-        stream.close()
+        try:
+            stream.start()
+            # User hits ENTER or Ctrl-C to stop
+            try:
+                input()
+            except KeyboardInterrupt:
+                print("\nRecording interrupted by user.")
+        finally:
+            try:
+                stream.stop()
+                stream.close()
+            except Exception:
+                logger.exception("Error stopping or closing stream")
+        
+        if not recording:
+            return None
 
         # Combine chunks
-        audio_data = np.concatenate(recording, axis=0)
+        return np.concatenate(recording, axis=0)
 
-        # Write to temp WAV
+    def _transcribe_audio(self, audio_data: np.ndarray) -> str:
+        """
+        Transcribe raw PCM audio using faster-whisper.
+
+        Args:
+            audio_data: Single-channel PCM waveform array.
+
+        Returns:
+            str: The recognized speech content (may be empty).
+        """
+        # Write to temp WAV.
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             with wave.open(tmp.name, "wb") as f:
                 f.setnchannels(1)
