@@ -1,5 +1,7 @@
 from cerebrum.cli.command import Command
 from cerebrum.core.speech_to_text import SpeechToText
+from cerebrum.cli.spinner import typewriter_spinner
+from cerebrum.cli.cli_audio_recorder import CliAudioRecorder
 
 
 class InputReader:
@@ -13,14 +15,16 @@ class InputReader:
     CLI layer.
     """
 
-    def __init__(self, speech_to_text: SpeechToText):
+    def __init__(self, speech_to_text: SpeechToText, audio_recorder: CliAudioRecorder):
         """
         Initialize the input reader.
 
         Args:
             speech_to_text: STT engine used when voice input is triggered.
+            audio_recorder: Audio capture backend used when voice input is requested.
         """
         self._speech_to_text = speech_to_text
+        self._audio_recorder = audio_recorder 
 
     def text(self, prompt: str, allow_voice: bool = False) -> str:
         """
@@ -42,7 +46,19 @@ class InputReader:
         raw = input(f"{prompt}{command_text}: ")
 
         if allow_voice and raw == Command.VOICE:
-            raw = self._speech_to_text.transcribe()
+            audio = self._audio_recorder.record()
+            if audio is None:
+                print("No audio captured.")
+                return ""
+
+            raw = None
+            with typewriter_spinner(["Transcribing audio..."]):
+                raw = self._speech_to_text.transcribe(audio)
+
+            if not raw:
+                print("No speech detected.")
+                return ""
+
             print(f"Recorded: {raw}")
         return raw.strip()
 

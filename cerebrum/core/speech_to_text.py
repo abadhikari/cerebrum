@@ -1,3 +1,5 @@
+import numpy as np
+
 from typing import Protocol
 
 
@@ -10,7 +12,7 @@ class SpeechToText(Protocol):
     (e.g., keypress-triggered, time-bounded, stream-driven).
     """
 
-    def transcribe(self) -> str:
+    def transcribe(self, audio_data: np.ndarray) -> str:
         """
         Capture audio and return the transcribed text.
 

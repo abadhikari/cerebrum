@@ -10,6 +10,7 @@ from cerebrum.cli.colors import (
 from cerebrum.cli.input_reader import InputReader
 from cerebrum.cli.thought_coach import ThoughtCoach
 from cerebrum.cli.thought_review import ThoughtReview
+from cerebrum.cli.cerebrum_session import CerebrumSession, CerebrumSessionResult
 from cerebrum.cli.views import (
     print_banner,
     print_box_text,
@@ -43,6 +44,7 @@ class CliSession:
         cerebrum_chat: CerebrumChat,
         thought_coach: ThoughtCoach,
         thought_review: ThoughtReview,
+        cerebrum_session: CerebrumSession,
     ):
         """
         Initialize a new CLI session.
@@ -55,6 +57,7 @@ class CliSession:
         self._cerebrum_chat = cerebrum_chat
         self._thought_coach = thought_coach
         self._thought_review = thought_review
+        self._cerebrum_session = cerebrum_session
 
         self._selected_index: Optional[Index] = None
         self._should_exit = False
@@ -62,9 +65,10 @@ class CliSession:
         self._menu_actions = {
             "1": ("Add Thought", self._action_add_thought),
             "2": ("Ask Cerebrum", self._action_ask_cerebrum),
-            "3": ("Talk to Duck", self._action_talk_to_duck),
-            "4": ("Random Review", self._action_random_review),
-            "5": ("Exit Cerebrum", self._action_close_cerebrum),
+            "3": ("Start Cerebrum Session", self._action_cerebrum_session),
+            "4": ("Talk to Duck", self._action_talk_to_duck),
+            "5": ("Random Review", self._action_random_review),
+            "6": ("Exit Cerebrum", self._action_close_cerebrum),
         }
 
     def run_session(self) -> None:
@@ -229,6 +233,12 @@ class CliSession:
             print_search_result(search_result)
 
         self._cerebrum_chat.run(query, search_result)
+    
+    def _action_cerebrum_session(self) -> None:
+        print("\n==== CEREBRUM SESSION ====")
+        result = self._cerebrum_session.run()
+        if result == CerebrumSessionResult.ADD_THOUGHT:
+            self._action_add_thought()
 
     def _action_talk_to_duck(self) -> None:
         print("\n==== TALK TO DUCK ====")

@@ -44,6 +44,7 @@ class Config:
         )
 
         self.whisper_model_name: str = self._required_env("WHISPER_MODEL_NAME")
+        self.audio_sample_rate: int = int(self._required_env("AUDIO_SAMPLE_RATE"))
 
     def _required_env(self, env_key: str) -> str:
         env_value = os.getenv(env_key)

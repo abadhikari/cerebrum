@@ -13,3 +13,4 @@ class Command(StrEnum):
 
     VOICE = "/v"
     QUIT = "/q"
+    THOUGHT = "/t"

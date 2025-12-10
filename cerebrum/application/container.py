@@ -73,7 +73,7 @@ class Container:
             self._config.language_model_name,
             self._config.language_model_temperature,
         )
-        speech_to_text = WhisperSpeechToText(self._config.whisper_model_name)
+        speech_to_text = WhisperSpeechToText(self._config.whisper_model_name, self._config.audio_sample_rate)
 
         self._faiss_client = faiss_client
         self._sql_client = sql_client

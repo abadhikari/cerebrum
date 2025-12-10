@@ -17,7 +17,9 @@ from cerebrum.cli.session import CliSession
 from cerebrum.cli.spinner import typewriter_spinner
 from cerebrum.cli.thought_coach import ThoughtCoach
 from cerebrum.cli.thought_review import ThoughtReview
+from cerebrum.cli.cerebrum_session import CerebrumSession
 from cerebrum.infra.logging.logging_config import init_logging
+from cerebrum.cli.cli_audio_recorder import CliAudioRecorder
 
 logger = logging.getLogger(__name__)
 
@@ -30,22 +32,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _build_cli_session(container: Container):
+def _build_cli_session(config: Config, container: Container):
     language_model = container.language_model
-    input_reader = InputReader(container.speech_to_text)
+    audio_recorder = CliAudioRecorder(config.audio_sample_rate)
+    input_reader = InputReader(container.speech_to_text, audio_recorder)
     cerebrum_chat = CerebrumChat(language_model, input_reader)
     thought_coach = ThoughtCoach(language_model, input_reader, container.service)
     thought_recall = ThoughtReview(language_model, input_reader, container.service)
+    cerebrum_session = CerebrumSession(language_model, input_reader)
     return CliSession(
         container.service,
         input_reader,
         cerebrum_chat,
         thought_coach,
         thought_recall,
+        cerebrum_session,
     )
 
 
-def run_cli(container: Container) -> int:
+def run_cli(config: Config, container: Container) -> int:
     """
     Run the interactive CLI session for Cerebrum.
 
@@ -55,7 +60,7 @@ def run_cli(container: Container) -> int:
     - guaranteed cleanup via container.stop()
     """
     try:
-        cli_session = _build_cli_session(container)
+        cli_session = _build_cli_session(config, container)
         cli_session.run_session()
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
@@ -95,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
         logger.exception("Error during Cerebrum bootstrap:")
         return 1
 
-    return run_cli(container)
+    return run_cli(config, container)
 
 
 if __name__ == "__main__":
